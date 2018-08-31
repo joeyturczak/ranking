@@ -7,6 +7,9 @@ root = tk.Tk()
 root.withdraw()
 current_directory = os.getcwd()
 
+def clean_dataset(df):
+    return df
+
 def get_file_path():
     file_path = filedialog.askopenfilename(initialdir = current_directory, 
                                        title = 'Select file', 
