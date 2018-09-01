@@ -33,7 +33,7 @@ def main():
     print('\n*******************************************************************')
     print('******************************RANKING******************************')
     print('*******************************************************************')
-    
+
     for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
         if 'att' in f:
             att_df = get_dataset(f)
@@ -51,10 +51,16 @@ def main():
     print(emp_df.head(1))
     print(eval_df.head(1))
     print(role_df.head(1))
-    df_combined = pd.merge(emp_df, att_df, on='file_number')
-    df_combined = pd.merge(df_combined, eval_df, on='file_number')
-    df_combined = pd.merge(df_combined, role_df, on='file_number')
-    print(df_combined.head(1))
+    df_combined = pd.merge(emp_df, att_df, how='left', on='file_number')
+    df_combined = pd.merge(df_combined, eval_df, how='left', on='file_number')
+    df_combined = pd.merge(df_combined, role_df, how='left', on='file_number')
+    
+    print(df_combined.isnull().sum().any())
+    print(df_combined.fillna(0, inplace=True))
+    df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
+    print(df_combined)
+    print(df_combined.describe())
+    print(df_combined.info())
 
 if __name__ == '__main__':
     main()
