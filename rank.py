@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
 import os
+import datetime as dt
 
 
 cur_dir = os.getcwd()
 data_dir = cur_dir + '/data/'
+output_dir = cur_dir + '/output/'
 data_ext = (('.xls', '.xlsx', '.csv', '.htm'))
 
 
@@ -101,9 +103,15 @@ def calculate_rank(df):
 def main():
     df = get_employee_data()
     df = calculate_rank(df)
+
     print(df)
     print(df.describe())
     print(df.info())
+
+    filename = output_dir + 'ranking_' + dt.datetime.now().strftime('%Y%m%d_%H%M') + '.csv'
+
+    print('\nSaving data to file: {}'.format(filename))
+    df.to_csv(filename, index=False)
 
 
 if __name__ == '__main__':
