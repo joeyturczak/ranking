@@ -3,17 +3,31 @@ import numpy as np
 import os
 import datetime as dt
 
-
+# Current working directory
 cur_dir = os.getcwd()
+# Directory for data files
 data_dir = cur_dir + '/data/'
+# Output directory
 output_dir = cur_dir + '/output/'
+# Extensions to include in file list
 data_ext = (('.xls', '.xlsx', '.csv', '.htm'))
 
-
+# Set pandas to display all columns
 pd.set_option('display.max_columns', None)
 
 
 def get_files_list(directory='/', extensions='', abs_path=False):
+    """
+    Retrieves a list of files for a given directory.
+
+    Args:
+        (str) directory - path of directory to find files. defaults to root directory.
+        (Tuple) extensions - extensions to include. includes all extensions by default.
+        (bool) abs_path - set to true if provided directory is an absolute path. 
+                          defaults to false for relative path.
+    Returns:
+        files - List of files in specified directory
+    """
     file_dir = ''
     if abs_path:
         file_dir = directory
@@ -22,9 +36,19 @@ def get_files_list(directory='/', extensions='', abs_path=False):
 
 
 def clean_dataset(func):
+    """
+    Cleans dataset returned by func.
+
+    Args:
+        (function) func - function that returns a Pandas DataFrame.
+    Returns:
+        df - Pandas DataFrame that has been cleaned up
+    """
     def wrapper(*args, **kwargs):
         df = func(*args, **kwargs)
+        # Strip whitespace from columns names and make them lowercase
         df.rename(columns=lambda x: x.strip().lower().replace(' ', '_'), inplace=True)
+        # Convert file_number column to string datatype
         df['file_number'] = df['file_number'].astype(str)
         return df
     return wrapper
@@ -32,6 +56,14 @@ def clean_dataset(func):
 
 @clean_dataset
 def get_dataset(filename):
+    """
+    Retrieve dataset from specified file
+
+    Args:
+        (str) filename - file path of dataset
+    Returns:
+        df - Pandas DataFrame that has been loaded from file
+    """
     print('\nLoading data from {}'.format(filename))
     
     if filename.endswith('.csv'):
@@ -42,6 +74,12 @@ def get_dataset(filename):
 
 
 def get_employee_data():
+    """
+    Combine employee data from multiple datasets into one dataset
+
+    Returns:
+        df_combined - Pandas DataFrame that contains all relavent employee data for ranking
+    """
     for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
         if 'att' in f:
             att_df = get_dataset(f)
@@ -68,6 +106,14 @@ def get_employee_data():
 
 
 def calculate_rank(df):
+    """
+    Calculates employee ranking from provided employee information
+
+    Args:
+        (pandas.DataFrame) df - dataset containing employee information
+    Returns:
+        df - Pandas DataFrame that has a calculated rank for each employee
+    """
     eval_per = 0.7
     att_per = 0.2
     role_per = 0.1
