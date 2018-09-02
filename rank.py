@@ -25,6 +25,7 @@ def clean_dataset(func):
     def wrapper(*args, **kwargs):
         df = func(*args, **kwargs)
         df.rename(columns=lambda x: x.strip().lower().replace(' ', '_'), inplace=True)
+        df['file_number'] = df['file_number'].astype(str)
         return df
     return wrapper
 
@@ -87,13 +88,22 @@ def calculate_rank(df):
     df['eval_score'] = df['overall_score'].astype(int).apply(lambda x: eval_score[np.where(eval_range==x)]).astype(float)
     df['role_score'] = df['role_date'].apply(lambda x: role_score[np.where(role_date_range==x)]).astype(float)
     df['rank_score'] = df['att_score'] * att_per + df['eval_score'] * eval_per + df['role_score'] * role_per
-    df_score = df.query('overall_score != 0')
-    df_noscore = df.query('overall_score == 0')
+
+    df_score = df.query('overall_score > 0')
+    df_noscore = df.loc[(df['overall_score'] == 0) & (df['file_number'].str.contains('^[0-9]+'))]
+    df_temp = df.loc[(df['overall_score'] == 0) & (df['file_number'].str.startswith('C'))]
+
     df_score = df_score.sort_values(by=['rank_score'], ascending=False)
     df_score.reset_index(drop=True, inplace=True)
+
     df_noscore = df_noscore.sort_values(by=['role_score', 'att_score', 'file_number'], ascending=False)
     df_noscore.reset_index(drop=True, inplace=True)
+
+    df_temp = df_temp.sort_values(by=['role_score', 'att_score', 'file_number'], ascending=False)
+    df_temp.reset_index(drop=True, inplace=True)
+
     df = df_score.append(df_noscore, ignore_index=True)
+    df = df.append(df_temp, ignore_index=True)
     df.reset_index(drop=True, inplace=True)
     df['rank'] = df.index + 1
 
