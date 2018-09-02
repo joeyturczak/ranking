@@ -79,6 +79,9 @@ def get_employee_data():
 
     Returns:
         df_combined - Pandas DataFrame that contains all relavent employee data for ranking
+    
+    TODO create separate functions for each dataset
+         group files that start with the same characters and run ranking for each
     """
     for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
         if 'att' in f:
@@ -155,6 +158,20 @@ def calculate_rank(df):
 
     return df
 
+def get_eval_scores():
+    """TODO 
+    create eval folder
+    get all files in eval folder
+    if more than one, ask user which one
+    """
+
+def calculate_points():
+    """TODO
+    discover which report is being used
+    convert each report into standardized dataset
+    calculate points
+    return points dataframe
+    """
 
 def main():
     df = get_employee_data()
