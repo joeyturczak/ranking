@@ -89,9 +89,9 @@ def calculate_rank(df):
     df['rank_score'] = df['att_score'] * att_per + df['eval_score'] * eval_per + df['role_score'] * role_per
     df_score = df.query('overall_score != 0')
     df_noscore = df.query('overall_score == 0')
-    df_score.sort_values(by=['rank_score'], inplace=True, ascending=False)
+    df_score = df_score.sort_values(by=['rank_score'], ascending=False)
     df_score.reset_index(drop=True, inplace=True)
-    df_noscore.sort_values(by=['role_score', 'att_score', 'file_number'], inplace=True, ascending=False)
+    df_noscore = df_noscore.sort_values(by=['role_score', 'att_score', 'file_number'], ascending=False)
     df_noscore.reset_index(drop=True, inplace=True)
     df = df_score.append(df_noscore, ignore_index=True)
     df.reset_index(drop=True, inplace=True)
@@ -104,9 +104,12 @@ def main():
     df = get_employee_data()
     df = calculate_rank(df)
 
+    print('\n')
     print(df)
-    print(df.describe())
+    print('\n')
     print(df.info())
+    print('\n')
+    print(df.describe())
 
     filename = output_dir + 'ranking_' + dt.datetime.now().strftime('%Y%m%d_%H%M') + '.csv'
 
