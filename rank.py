@@ -48,9 +48,11 @@ def clean_dataset(func):
         df = func(*args, **kwargs)
         # Strip whitespace from columns names and make them lowercase
         df.rename(columns=lambda x: x.strip().lower().replace(' ', '_'), inplace=True)
-        df.rename(index=str, columns={'payroll_#':'file_number'}, inplace=True)
-        # Convert file_number column to string datatype
-        df['file_number'] = df['file_number'].astype(str)
+        df.rename(index=str, columns={'payroll_#':'payroll_number', 
+                                      'employee_number':'payroll_number',
+                                      'role_/_rate_effective_date':'role_date'}, inplace=True)
+        # Convert payroll_number column to string datatype and add leading zeroes
+        df['payroll_number'] = df['payroll_number'].astype(str).apply('{0:0>6}'.format)
         return df
     return wrapper
 
@@ -71,7 +73,8 @@ def get_dataset(filename):
         df = pd.read_csv(filename)
     elif 'emp' in filename:
         df = pd.read_excel(filename, header=5)
-        print(df)
+    elif 'demo' in filename:
+        df = pd.read_excel(filename, header=3)
     else:
         df = pd.read_excel(filename)
     return df
@@ -90,21 +93,21 @@ def get_employee_data():
     for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
         if 'att' in f:
             att_df = get_dataset(f)
-            att_df = att_df[['file_number', 'points']]
+            att_df = att_df[['payroll_number', 'points']]
             att_df['points'] = att_df['points'].apply(lambda x: 12 if x > 12 else x)
         elif 'emp' in f:
             emp_df = get_dataset(f)
-            emp_df = emp_df[['file_number', 'name']]
+            emp_df = emp_df[['payroll_number', 'name']]
         elif 'eval' in f:
             eval_df = get_dataset(f)
-            eval_df = eval_df[['file_number', 'overall_score']]
-        elif 'role' in f:
+            eval_df = eval_df[['payroll_number', 'competency_score']]
+        elif 'demo' in f:
             role_df = get_dataset(f)
-            role_df = role_df[['file_number', 'role_date']]
+            role_df = role_df[['payroll_number', 'role_date']]
 
-    df_combined = pd.merge(emp_df, att_df, how='left', on='file_number')
-    df_combined = pd.merge(df_combined, eval_df, how='left', on='file_number')
-    df_combined = pd.merge(df_combined, role_df, how='left', on='file_number')
+    df_combined = pd.merge(emp_df, att_df, how='left', on='payroll_number')
+    df_combined = pd.merge(df_combined, eval_df, how='left', on='payroll_number')
+    df_combined = pd.merge(df_combined, role_df, how='left', on='payroll_number')
     
     df_combined.fillna(0, inplace=True)
     df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
@@ -138,21 +141,21 @@ def calculate_rank(df):
     role_score = np.linspace(0, 1, role_date_len)
 
     df['att_score'] = df['points'].astype(int).apply(lambda x: att_score[np.where(att_range==x)]).astype(float)
-    df['eval_score'] = df['overall_score'].astype(int).apply(lambda x: eval_score[np.where(eval_range==x)]).astype(float)
+    df['eval_score'] = df['competency_score'].astype(int).apply(lambda x: eval_score[np.where(eval_range==x)]).astype(float)
     df['role_score'] = df['role_date'].apply(lambda x: role_score[np.where(role_date_range==x)]).astype(float)
     df['rank_score'] = df['att_score'] * att_per + df['eval_score'] * eval_per + df['role_score'] * role_per
 
-    df_score = df.query('overall_score > 0')
-    df_noscore = df.loc[(df['overall_score'] == 0) & (df['file_number'].str.contains('^[0-9]+'))]
-    df_temp = df.loc[(df['overall_score'] == 0) & (df['file_number'].str.startswith('C'))]
+    df_score = df.query('competency_score > 0')
+    df_noscore = df.loc[(df['competency_score'] == 0) & (df['payroll_number'].str.contains('^[0-9]+'))]
+    df_temp = df.loc[(df['competency_score'] == 0) & (df['payroll_number'].str.startswith('C'))]
 
     df_score = df_score.sort_values(by=['rank_score'], ascending=False)
     df_score.reset_index(drop=True, inplace=True)
 
-    df_noscore = df_noscore.sort_values(by=['role_score', 'att_score', 'file_number'], ascending=False)
+    df_noscore = df_noscore.sort_values(by=['role_score', 'att_score', 'payroll_number'], ascending=False)
     df_noscore.reset_index(drop=True, inplace=True)
 
-    df_temp = df_temp.sort_values(by=['role_score', 'att_score', 'file_number'], ascending=False)
+    df_temp = df_temp.sort_values(by=['role_score', 'att_score', 'payroll_number'], ascending=False)
     df_temp.reset_index(drop=True, inplace=True)
 
     df = df_score.append(df_noscore, ignore_index=True)
