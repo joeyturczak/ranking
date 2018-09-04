@@ -48,6 +48,7 @@ def clean_dataset(func):
         df = func(*args, **kwargs)
         # Strip whitespace from columns names and make them lowercase
         df.rename(columns=lambda x: x.strip().lower().replace(' ', '_'), inplace=True)
+        df.rename(index=str, columns={'payroll_#':'file_number'}, inplace=True)
         # Convert file_number column to string datatype
         df['file_number'] = df['file_number'].astype(str)
         return df
@@ -68,6 +69,9 @@ def get_dataset(filename):
     
     if filename.endswith('.csv'):
         df = pd.read_csv(filename)
+    elif 'emp' in filename:
+        df = pd.read_excel(filename, header=5)
+        print(df)
     else:
         df = pd.read_excel(filename)
     return df
