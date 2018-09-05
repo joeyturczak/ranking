@@ -128,21 +128,20 @@ def calculate_rank(df):
     att_per = 0.2
     role_per = 0.1
     
-    att_range = np.linspace(0.5, 12, 24)
-    att_range = np.insert(att_range, 0, 0)
-    att_score = np.linspace(0, 1, 25)
+    att_range = np.array([12.0,11.5,11.0,10.5,10.0,9.5,9.0,8.5,8.0,7.5,7.0,6.5,6.0,5.5,5.0,4.5,4.0,3.5,3.0,2.5,2.0,1.5,1.0,0.5,0])
+    att_score = np.linspace(0, 1, att_range.size)
 
-    eval_range = np.linspace(1, 5, 21)
-    eval_range = np.insert(eval_range, 0, 0)
-    eval_score = np.linspace(0, 1, 22)
+    eval_range = np.array([0,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.0,3.2,3.4,3.6,3.8,4.0,4.2,4.4,4.6,4.8,5.0])
+    eval_range = np.delete(eval_range, np.argwhere(eval_range > df['competency_score'].max()))
+    eval_score = np.linspace(0, 1, eval_range.size)
 
     role_date_range = pd.date_range(df['role_date'].min(), df['role_date'].max(), freq='D')[::-1]
     role_date_len = len(pd.date_range(df['role_date'].min(), df['role_date'].max(), freq='D'))
     role_score = np.linspace(0, 1, role_date_len)
 
-    df['att_score'] = df['points'].astype(int).apply(lambda x: att_score[np.where(att_range==x)]).astype(float)
-    df['eval_score'] = df['competency_score'].astype(int).apply(lambda x: eval_score[np.where(eval_range==x)]).astype(float)
-    df['role_score'] = df['role_date'].apply(lambda x: role_score[np.where(role_date_range==x)]).astype(float)
+    df['att_score'] = df['points'].apply(lambda x: att_score[att_range == x]).astype(float)
+    df['eval_score'] = df['competency_score'].apply(lambda x: eval_score[eval_range == x]).astype(float)
+    df['role_score'] = df['role_date'].apply(lambda x: role_score[role_date_range==x]).astype(float)
     df['rank_score'] = df['att_score'] * att_per + df['eval_score'] * eval_per + df['role_score'] * role_per
 
     df_score = df.query('competency_score > 0')
@@ -179,6 +178,7 @@ def calculate_points():
     calculate points
     return points dataframe
     """
+    
 
 def main():
     df = get_employee_data()
