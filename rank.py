@@ -55,7 +55,8 @@ def clean_dataset(func):
                                       'employee_number':'payroll_number',
                                       'role_/_rate_effective_date':'role_date'}, inplace=True)
         # Convert payroll_number column to string datatype and add leading zeroes
-        df['payroll_number'] = df['payroll_number'].astype(str).apply('{0:0>6}'.format)
+        if 'payroll_number' in df.columns:
+            df['payroll_number'] = df['payroll_number'].astype(str).apply('{0:0>6}'.format)
         return df
     return wrapper
 
@@ -78,6 +79,8 @@ def get_dataset(filename):
         df = pd.read_excel(filename, header=5)
     elif 'demo' in filename:
         df = pd.read_excel(filename, header=3)
+    elif 'att' in filename:
+        df = pd.read_excel(filename, header=7)
     else:
         df = pd.read_excel(filename)
     return df
@@ -105,12 +108,12 @@ def get_dataset(filename):
 #             df_eval = get_dataset(f)
 #             df_eval = df_eval[['payroll_number', 'competency_score']]
 #         elif 'demo' in f:
-#             df_role = get_dataset(f)
-#             df_role = df_role[['payroll_number', 'role_date']]
+#             df_emp_role = get_dataset(f)
+#             df_emp_role = df_emp_role[['payroll_number', 'role_date']]
 
 #     df_combined = pd.merge(df_emp, df_att, how='left', on='payroll_number')
 #     df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
-#     df_combined = pd.merge(df_combined, df_role, how='left', on='payroll_number')
+#     df_combined = pd.merge(df_combined, df_emp_role, how='left', on='payroll_number')
     
 #     df_combined.fillna(0, inplace=True)
 #     df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
@@ -124,35 +127,36 @@ def get_employee_info(file_prefix):
 
     Returns:
         df_combined - Pandas DataFrame that contains all relavent employee data for ranking
-    
-    TODO create separate functions for each dataset
-         group files that start with the same characters and run ranking for each
     """
     df_eval = get_eval_scores()
-    for f in get_files_list(directory=data_dir, extensions=data_ext, startswith=file_prefix, abs_path=True):
-        if 'att' in f:
-            df_att = get_dataset(f)
-            df_att = df_att[['payroll_number', 'points']]
-            df_att['points'] = df_att['points'].apply(lambda x: 12 if x > 12 else x)
-        elif 'emp' in f:
-            df_emp = get_dataset(f)
-            df_emp = df_emp[['payroll_number', 'name']]
-        # elif 'eval' in f:
-        #     df_eval = get_dataset(f)
-        #     df_eval = df_eval[['payroll_number', 'competency_score']]
-        # elif 'demo' in f:
-        #     df_role = get_dataset(f)
-        #     df_role = df_role[['payroll_number', 'role_date']]
-    
-    df_role = get_role_dates(df_emp)
-    df_role = df_role[['payroll_number', 'role_date']]
 
-    df_combined = pd.merge(df_emp, df_att, how='left', on='payroll_number')
-    df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
-    df_combined = pd.merge(df_combined, df_role, how='left', on='payroll_number')
+    files = get_files_list(directory=data_dir, extensions=data_ext, startswith=file_prefix, abs_path=True)
+
+    for f in files:
+        if 'att' in f:
+            attendance_file = f
+        elif 'emp' in f:
+            employee_list_file = f
+
+    df_emp = get_dataset(employee_list_file)
+    df_emp = df_emp[['payroll_number', 'name']]
+
+    df_role = get_role_dates(df_emp)
+
+    df_att = calculate_points(attendance_file, df_role)
+
+    df_combined = pd.merge(df_role, df_att, how='left', on='payroll_number')
+
+    # df_att = get_dataset(attendance_file)
+    # df_att = df_att[['payroll_number', 'points']]
+    # df_att['points'] = df_att['points'].apply(lambda x: 12 if x > 12 else x)
+
+    # df_combined = pd.merge(df_emp, df_att, how='left', on='payroll_number')
+    # df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
+    # df_combined = pd.merge(df_combined, df_role, how='left', on='payroll_number')
     
     df_combined.fillna(0, inplace=True)
-    df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
+    # df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
 
     return df_combined
 
@@ -236,28 +240,29 @@ def get_employee_list(file_prefix):
 
 def get_role_dates(df_emp):
     filepath = data_dir + 'demo.xlsx'
-    df_role = get_dataset(filepath)
-    df_role = df_role[['payroll_number', 'role_date']]
-    df_combined = pd.merge(df_emp, df_role, how='left', on='payroll_number')
+    df_emp_role = get_dataset(filepath)
+    df_emp_role = df_emp_role[['payroll_number', 'role_date']]
+    df_combined = pd.merge(df_emp, df_emp_role, how='left', on='payroll_number')
     return df_combined
 
 
-def calculate_points(file_prefix):
-    """TODO
-    discover which report is being used
-    convert each report into standardized dataset
-    calculate points
-    return points dataframe
+def calculate_points(filepath, df_role):
     """
-    filepath = file_prefix + '-attendance.xlsx'
-    df_points = get_dataset(filepath)
+    """
+    df = get_dataset(filepath)
+    df['payroll_number'] = df['employee_name'].str[1:7]
+    df = df[['payroll_number', 'date', 'actual_leave']]
+    df = pd.merge(df, df_role, how='left', on='payroll_number')
+    df = df[df['date'] >= df['role_date']]
+    df['points'] = df['actual_leave'].str.split('-').str[-1].str.strip(' ')
+    df['points'] = df['points'].apply(lambda x: 0.5 if x == '1/2' else x)
+    df = df[df['points'] != 'MI']
+    df['points'] = df['points'].astype(float)
+    df = df[['payroll_number', 'date', 'points']]
+    df_point_totals = df[['payroll_number', 'points']].groupby(['payroll_number']).sum().reset_index()
+    df_point_totals['points'] = df_point_totals['points'].apply(lambda x: 12 if x > 12 else x)
 
-    # Calculate points
-
-    # df_points = df_points[['payroll_number', 'points']]
-    # df_points['points'] = df_points['points'].apply(lambda x: 12 if x > 12 else x)
-
-    return df_points
+    return df_point_totals
 
 
 def main():
