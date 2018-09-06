@@ -25,6 +25,7 @@ def get_files_list(directory='/', extensions='', startswith='', abs_path=False):
     Args:
         (str) directory - path of directory to find files. defaults to root directory.
         (Tuple) extensions - extensions to include. includes all extensions by default.
+        (str) startswith - file name must begin with this string.
         (bool) abs_path - set to true if provided directory is an absolute path. 
                           defaults to false for relative path.
     Returns:
@@ -34,7 +35,7 @@ def get_files_list(directory='/', extensions='', startswith='', abs_path=False):
     if abs_path:
         file_dir = directory
     files = [file_dir + f for f in os.listdir(directory) 
-            if (file_dir + f).startswith(startswith) and f.endswith(extensions)]
+            if f.startswith(startswith) and f.endswith(extensions)]
     return files
 
 
@@ -84,42 +85,7 @@ def get_dataset(filename):
     else:
         df = pd.read_excel(filename)
     return df
-
-
-# def get_employee_data():
-#     """
-#     Combine employee data from multiple datasets into one dataset
-
-#     Returns:
-#         df_combined - Pandas DataFrame that contains all relavent employee data for ranking
     
-#     TODO create separate functions for each dataset
-#          group files that start with the same characters and run ranking for each
-#     """
-#     for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
-#         if 'att' in f:
-#             df_att = get_dataset(f)
-#             df_att = df_att[['payroll_number', 'points']]
-#             df_att['points'] = df_att['points'].apply(lambda x: 12 if x > 12 else x)
-#         elif 'emp' in f:
-#             df_emp = get_dataset(f)
-#             df_emp = df_emp[['payroll_number', 'name']]
-#         elif 'eval' in f:
-#             df_eval = get_dataset(f)
-#             df_eval = df_eval[['payroll_number', 'competency_score']]
-#         elif 'demo' in f:
-#             df_emp_role = get_dataset(f)
-#             df_emp_role = df_emp_role[['payroll_number', 'role_date']]
-
-#     df_combined = pd.merge(df_emp, df_att, how='left', on='payroll_number')
-#     df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
-#     df_combined = pd.merge(df_combined, df_emp_role, how='left', on='payroll_number')
-    
-#     df_combined.fillna(0, inplace=True)
-#     df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
-
-#     return df_combined
-
 
 def get_employee_info(file_prefix):
     """
@@ -128,7 +94,6 @@ def get_employee_info(file_prefix):
     Returns:
         df_combined - Pandas DataFrame that contains all relavent employee data for ranking
     """
-    df_eval = get_eval_scores()
 
     files = get_files_list(directory=data_dir, extensions=data_ext, startswith=file_prefix, abs_path=True)
 
@@ -143,20 +108,14 @@ def get_employee_info(file_prefix):
 
     df_role = get_role_dates(df_emp)
 
+    df_eval = get_eval_scores(df_role)
+
     df_att = calculate_points(attendance_file, df_role)
 
     df_combined = pd.merge(df_role, df_att, how='left', on='payroll_number')
-
-    # df_att = get_dataset(attendance_file)
-    # df_att = df_att[['payroll_number', 'points']]
-    # df_att['points'] = df_att['points'].apply(lambda x: 12 if x > 12 else x)
-
-    # df_combined = pd.merge(df_emp, df_att, how='left', on='payroll_number')
-    # df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
-    # df_combined = pd.merge(df_combined, df_role, how='left', on='payroll_number')
+    df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
     
     df_combined.fillna(0, inplace=True)
-    # df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
 
     return df_combined
 
@@ -210,7 +169,7 @@ def calculate_rank(df):
 
     return df
 
-def get_eval_scores():
+def get_eval_scores(df_role):
     """
     """
     df_eval = pd.DataFrame()
@@ -218,6 +177,15 @@ def get_eval_scores():
         df_eval = df_eval.append(get_dataset(f))
     df_eval = df_eval[['payroll_number', 'competency_score']]
     df_eval.reset_index(drop=True, inplace=True)
+
+    # If role date is from october last year or later, set to 0
+    df_eval = pd.merge(df_role, df_eval, how='left', on='payroll_number')
+    year = dt.datetime.now().year
+    eval_date = dt.date(year - 1, 10, 1)
+    df_eval = df_eval[df_eval['role_date'] < eval_date]
+
+    df_eval = df_eval[['payroll_number', 'competency_score']]
+
     return df_eval
 
 
@@ -226,13 +194,13 @@ def get_file_groups():
 
     for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
         if 'demo' not in f:
-            groups.append(f.split('-')[0])
+            groups.append(f.split('/')[-1].split('-')[0])
     groups = set(groups)
     return groups
 
 
 def get_employee_list(file_prefix):
-    filepath = file_prefix + '-employee_list.xlsx'
+    filepath = data_dir + file_prefix + '-employee_list.xlsx'
     df_emp = get_dataset(filepath)
     df_emp = df_emp[['payroll_number', 'name']]
     return df_emp
@@ -266,31 +234,22 @@ def calculate_points(filepath, df_role):
 
 
 def main():
-    # df_eval = get_eval_scores()
-
     file_groups = get_file_groups()
 
     for group in file_groups:
         df = get_employee_info(group)
-        print(df.head())
+        df = calculate_rank(df)
+        print('\n')
+        print(df)
+        print('\n')
+        print(df.info())
+        print('\n')
+        print(df.describe())
 
-        # df_emp = get_employee_list(group)
-        # df_emp_role = get_role_dates(df_emp)
-        # df_att = calculate_points(group)
-    # df = get_employee_data()
-    # df = calculate_rank(df)
+        filename = output_dir + group.split('/')[-1] + '_ranking_' + dt.datetime.now().strftime('%Y%m%d%H%M') + '.csv'
 
-    # print('\n')
-    # print(df)
-    # print('\n')
-    # print(df.info())
-    # print('\n')
-    # print(df.describe())
-
-    # filename = output_dir + 'ranking_' + dt.datetime.now().strftime('%Y%m%d_%H%M') + '.csv'
-
-    # print('\nSaving data to file: {}'.format(filename))
-    # df.to_csv(filename, index=False)
+        print('\nSaving data to file: {}'.format(filename))
+        df.to_csv(filename, index=False)
 
 
 if __name__ == '__main__':
