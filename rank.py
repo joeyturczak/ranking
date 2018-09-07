@@ -12,8 +12,7 @@ dirs = {'output_dir': cur_dir + '/output/',
         'eval_dir': cur_dir + '/performance_reviews/',
         'demo_dir': cur_dir + '/demographics/',
         'att_dir': cur_dir + '/attendance_files/',
-        'emp_dir': cur_dir + '/employee_lists/',
-        'old_dir': cur_dir + '/old/'}
+        'emp_dir': cur_dir + '/employee_lists/'}
 
 # Error list
 errors = {'no_emp_list': 'No employee list files.' +
@@ -153,11 +152,6 @@ def get_employee_info(file_prefix):
     
     df_combined.fillna(0, inplace=True)
     df_combined['role_date'] = df_combined['role_date']
-
-    # Move files to old folder
-    old_file_prefix = dirs['old_dir'] + file_prefix + '_' + pd.Timestamp.now().strftime('%Y%m%d%H%M')
-    os.rename(employee_list_file, old_file_prefix + 'emp.' + employee_list_file.split('.')[-1])
-    os.rename(attendance_file, old_file_prefix + 'att.' + attendance_file.split('.')[-1])
 
     return df_combined
 
@@ -364,6 +358,7 @@ def main():
     for group in file_groups:
         df = get_employee_info(group)
         df = calculate_rank(df)
+
         print('\n')
         print(df)
         print('\n')
@@ -375,6 +370,8 @@ def main():
 
         print('\nSaving data to file: {}'.format(filename))
         df.to_csv(filename, index=False)
+
+    os.startfile(dirs['output_dir'])
 
 
 if __name__ == '__main__':
