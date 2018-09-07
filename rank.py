@@ -126,19 +126,28 @@ def get_employee_info(file_prefix):
     elif not demo_file:
         error(errors['no_demo_file'])
 
-    df_emp = get_employee_list(employee_list_file[0])
+    employee_list_file = employee_list_file[0]
+    attendance_file = attendance_file[0]
+    demo_file = demo_file[0]
 
-    df_role = get_role_dates(demo_file[0], df_emp)
+    df_emp = get_employee_list(employee_list_file)
+
+    df_role = get_role_dates(demo_file, df_emp)
 
     df_eval = get_eval_scores(df_role)
 
-    df_att = calculate_points(attendance_file[0], df_role)
+    df_att = calculate_points(attendance_file, df_role)
 
     df_combined = pd.merge(df_role, df_att, how='left', on='payroll_number')
     df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
     
     df_combined.fillna(0, inplace=True)
     df_combined['role_date'] = df_combined['role_date']
+
+    # Move files to old folder
+    old_file_prefix = dirs['old_dir'] + file_prefix + '_' + pd.Timestamp.now().strftime('%Y%m%d%H%M')
+    os.rename(employee_list_file, old_file_prefix + 'emp.' + employee_list_file.split('.')[-1])
+    os.rename(attendance_file, old_file_prefix + 'att.' + attendance_file.split('.')[-1])
 
     return df_combined
 
