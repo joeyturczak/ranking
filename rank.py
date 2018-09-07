@@ -243,9 +243,11 @@ def calculate_points(filepath, df_role):
     """
     """
     df = get_dataset(filepath)
+
     df['payroll_number'] = df['employee_name'].str[1:7]
     df = df[['payroll_number', 'date', 'actual_leave']]
     df = pd.merge(df, df_role, how='left', on='payroll_number')
+    df.fillna(method='ffill', inplace=True)
     df = df[df['date'] >= df['role_date']]
     df['points'] = df['actual_leave'].str.split('-').str[-1].str.strip(' ')
     df['points'] = df['points'].apply(lambda x: 0.5 if x == '1/2' else x)
