@@ -1,16 +1,25 @@
+#!/usr/bin/env python3
 import pandas as pd
 import numpy as np
 import os
+import pathlib
 import datetime as dt
 
 # Current working directory
 cur_dir = os.getcwd()
-# Directory for data files
-data_dir = cur_dir + '/data/'
-# Output directory
-output_dir = cur_dir + '/output/'
-# Evaluation directory
-eval_dir = data_dir + 'eval/'
+
+dirs = {'output_dir': cur_dir + '/output/', 
+        'eval_dir': cur_dir + '/performance_reviews/',
+        'demo_dir': cur_dir + '/demographics/',
+        'att_dir': cur_dir + '/attendance_files/',
+        'emp_dir': cur_dir + '/employee_lists/',
+        'old_dir': cur_dir + '/old/'}
+
+errors = {'no_emp_list':'No employee list files. Please place employee lists in {}'.format(dirs['emp_dir']),
+          'no_att_file': 'No attendance files. Please place leave taken reports in {}'.format(dirs['att_dir']),
+          'no_demo_file': 'No demographics file. Please place demographics file in {}'.format(dirs['demo_dir']),
+          'no_eval_file': 'No performance review files. Please place performance review files in {}'.format(dirs['eval_dir'])}
+               
 # Extensions to include in file list
 data_ext = (('.xls', '.xlsx', '.csv'))
 
@@ -41,7 +50,7 @@ def get_files_list(directory='/', extensions='', startswith='', abs_path=False):
 
 def clean_dataset(func):
     """
-    Cleans dataset returned by func.
+    Renames and formats columns.
 
     Args:
         (function) func - function that returns a Pandas DataFrame.
@@ -65,7 +74,7 @@ def clean_dataset(func):
 @clean_dataset
 def get_dataset(filename):
     """
-    Retrieve dataset from specified file
+    Retrieves dataset from specified file
 
     Args:
         (str) filename - file path of dataset
@@ -76,14 +85,16 @@ def get_dataset(filename):
     
     if filename.endswith('.csv'):
         df = pd.read_csv(filename)
-    elif 'emp' in filename:
-        df = pd.read_excel(filename, header=5)
-    elif 'demo' in filename:
-        df = pd.read_excel(filename, header=3)
-    elif 'att' in filename:
-        df = pd.read_excel(filename, header=7)
     else:
-        df = pd.read_excel(filename)
+        df = pd.read_excel(filename, header=None)
+        if 'Employee Settings Report' in df.iloc[0,0]:
+            df = pd.read_excel(filename, header=5)
+        elif 'Virtual Roster Employee' in df.iloc[0,0]:
+            df = pd.read_excel(filename, header=3)
+        elif 'Leave Taken' in df.iloc[0,0]:
+            df = pd.read_excel(filename, header=7)
+        else:
+            df = pd.read_excel(filename)
     return df
     
 
@@ -95,27 +106,40 @@ def get_employee_info(file_prefix):
         df_combined - Pandas DataFrame that contains all relavent employee data for ranking
     """
 
-    files = get_files_list(directory=data_dir, extensions=data_ext, startswith=file_prefix, abs_path=True)
+    employee_list_file = get_files_list(directory=dirs['emp_dir'],
+                           extensions=data_ext,
+                           startswith=file_prefix,
+                           abs_path=True)
 
-    for f in files:
-        if 'att' in f:
-            attendance_file = f
-        elif 'emp' in f:
-            employee_list_file = f
+    attendance_file = get_files_list(directory=dirs['att_dir'],
+                           extensions=data_ext,
+                           startswith=file_prefix,
+                           abs_path=True)
 
-    df_emp = get_dataset(employee_list_file)
-    df_emp = df_emp[['payroll_number', 'name']]
+    demo_file = get_files_list(directory=dirs['demo_dir'],
+                           extensions=data_ext,
+                           abs_path=True)
 
-    df_role = get_role_dates(df_emp)
+    if not employee_list_file:
+        error(errors['no_emp_list'])
+    elif not attendance_file:
+        error(errors['no_att_file'])
+    elif not demo_file:
+        error(errors['no_demo_file'])
+
+    df_emp = get_employee_list(employee_list_file[0])
+
+    df_role = get_role_dates(demo_file[0], df_emp)
 
     df_eval = get_eval_scores(df_role)
 
-    df_att = calculate_points(attendance_file, df_role)
+    df_att = calculate_points(attendance_file[0], df_role)
 
     df_combined = pd.merge(df_role, df_att, how='left', on='payroll_number')
     df_combined = pd.merge(df_combined, df_eval, how='left', on='payroll_number')
     
     df_combined.fillna(0, inplace=True)
+    df_combined['role_date'] = df_combined['role_date']
 
     return df_combined
 
@@ -173,7 +197,10 @@ def get_eval_scores(df_role):
     """
     """
     df_eval = pd.DataFrame()
-    for f in get_files_list(directory=eval_dir, extensions=data_ext, abs_path=True):
+    files = get_files_list(directory=dirs['eval_dir'], extensions=data_ext, abs_path=True)
+    if not files:
+        error(errors['no_eval_file'])
+    for f in files:
         df_eval = df_eval.append(get_dataset(f))
     df_eval = df_eval[['payroll_number', 'competency_score']]
     df_eval.reset_index(drop=True, inplace=True)
@@ -192,22 +219,21 @@ def get_eval_scores(df_role):
 def get_file_groups():
     groups = []
 
-    for f in get_files_list(directory=data_dir, extensions=data_ext, abs_path=True):
-        if 'demo' not in f:
-            groups.append(f.split('/')[-1].split('-')[0])
-    groups = set(groups)
+    for f in get_files_list(directory=dirs['emp_dir'], extensions=data_ext, abs_path=True):
+        groups.append(f.split('/')[-1].split('.')[0])
+    if not groups:
+        error(errors['no_employee_list'])
     return groups
 
 
-def get_employee_list(file_prefix):
-    filepath = data_dir + file_prefix + '-employee_list.xlsx'
+def get_employee_list(filepath):
     df_emp = get_dataset(filepath)
-    df_emp = df_emp[['payroll_number', 'name']]
+    df_emp[['last_name', 'first_name']] = df_emp['name'].apply(lambda x: pd.Series(x.split(', ')))
+    df_emp = df_emp[['payroll_number', 'last_name', 'first_name']]
     return df_emp
 
 
-def get_role_dates(df_emp):
-    filepath = data_dir + 'demo.xlsx'
+def get_role_dates(filepath, df_emp):
     df_emp_role = get_dataset(filepath)
     df_emp_role = df_emp_role[['payroll_number', 'role_date']]
     df_combined = pd.merge(df_emp, df_emp_role, how='left', on='payroll_number')
@@ -233,7 +259,18 @@ def calculate_points(filepath, df_role):
     return df_point_totals
 
 
+def create_dirs():
+    for key, value in dirs.items():
+        pathlib.Path(value).mkdir(parents=True, exist_ok=True)
+
+
+def error(err):
+    print('\nCannot complete ranking: {}'.format(err))
+    exit()
+
+
 def main():
+    create_dirs()
     file_groups = get_file_groups()
 
     for group in file_groups:
@@ -246,7 +283,7 @@ def main():
         print('\n')
         print(df.describe())
 
-        filename = output_dir + group.split('/')[-1] + '_ranking_' + dt.datetime.now().strftime('%Y%m%d%H%M') + '.csv'
+        filename = dirs['output_dir'] + group.split('/')[-1] + '_ranking_' + dt.datetime.now().strftime('%Y%m%d%H%M') + '.csv'
 
         print('\nSaving data to file: {}'.format(filename))
         df.to_csv(filename, index=False)
