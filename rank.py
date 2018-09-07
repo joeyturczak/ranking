@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import os
 import pathlib
-import datetime as dt
 
 # Current working directory
 cur_dir = os.getcwd()
@@ -207,8 +206,8 @@ def get_eval_scores(df_role):
 
     # If role date is from october last year or later, set to 0
     df_eval = pd.merge(df_role, df_eval, how='left', on='payroll_number')
-    year = dt.datetime.now().year
-    eval_date = dt.date(year - 1, 10, 1)
+    year = pd.Timestamp.now().year
+    eval_date = pd.Timestamp(year=year - 1, month=10, day=1)
     df_eval = df_eval[df_eval['role_date'] < eval_date]
 
     df_eval = df_eval[['payroll_number', 'competency_score']]
@@ -283,7 +282,7 @@ def main():
         print('\n')
         print(df.describe())
 
-        filename = dirs['output_dir'] + group.split('/')[-1] + '_ranking_' + dt.datetime.now().strftime('%Y%m%d%H%M') + '.csv'
+        filename = dirs['output_dir'] + group.split('/')[-1] + '_ranking_' + pd.Timestamp.now().strftime('%Y%m%d%H%M') + '.csv'
 
         print('\nSaving data to file: {}'.format(filename))
         df.to_csv(filename, index=False)
