@@ -179,10 +179,10 @@ def calculate_rank(df):
     df_score = df_score.sort_values(by=['rank_score'], ascending=False)
     df_score.reset_index(drop=True, inplace=True)
 
-    df_noscore = df_noscore.sort_values(by=['role_score', 'att_score', 'payroll_number'], ascending=False)
+    df_noscore = df_noscore.sort_values(by=['role_score', 'att_score', 'payroll_number'], ascending=(False, False, True))
     df_noscore.reset_index(drop=True, inplace=True)
 
-    df_temp = df_temp.sort_values(by=['role_score', 'att_score', 'payroll_number'], ascending=False)
+    df_temp = df_temp.sort_values(by=['role_score', 'att_score', 'payroll_number'], ascending=(False, False, True))
     df_temp.reset_index(drop=True, inplace=True)
 
     df = df_score.append(df_noscore, ignore_index=True)
