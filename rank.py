@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import pathlib
+import time
 
 # Current working directory
 CURRENT_DIR = os.getcwd()
@@ -383,6 +384,9 @@ def main():
     df_eval = combine_dfs(df_evals)
 
     for group in groups:
+        print('\n\n\nCalculating ranking for {}\n'.format(group))
+        start_time = time.time()
+
         df_emp = [x for x in emp_datasets if x['group'] == group][0]['df']
         df_att = [x for x in att_datasets if x['group'] == group][0]['df']
 
@@ -393,8 +397,6 @@ def main():
         df = df[['payroll_number', 'last_name', 'first_name',
                  'competency_score', 'points', 'role_date', 'eval_score',
                  'att_score', 'role_score', 'rank_score', 'rank']]
-
-        print('\n{}\n'.format(group))
 
         print(df)
         print('\n')
@@ -409,6 +411,9 @@ def main():
         print('\nSaving data to file: {}'.format(filename))
         df.to_csv(filename, index=False)
 
+        print("\nThis took {} seconds.".format(time.time() - start_time))
+
+    # Open output directory
     os.startfile(OUTPUT_DIR)
 
 
