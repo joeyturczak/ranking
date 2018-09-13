@@ -15,7 +15,7 @@ OUTPUT_DIR = CURRENT_DIR + '/output/'
 SCAN_DIR = CURRENT_DIR + '/data/'
 
 # Extensions to include in file list
-EXT = (('.xls', '.xlsx', '.csv'))
+EXT = (('.xls', '.xlsx', '.csv', '.htm'))
 
 # Set pandas to display all columns
 pd.set_option('display.max_columns', None)
@@ -104,29 +104,45 @@ def identify_dataset(func):
     def wrapper(*args, **kwargs):
         df = func(*args, **kwargs)
         df_group = None
-        first_col = df.columns[0]
-        if 'Employee Settings Report' in first_col:
-            header_row = 5
-            df_type = 'emp'
-            df_group = df.iloc[2, 1].strip(' position.').split('the ')[-1] \
-                .replace(' ', '_').lower()
-        elif 'Payroll #' in first_col:
-            header_row = 0
-            df_type = 'emp'
-        elif 'Virtual Roster Employee' in first_col:
-            header_row = 2
-            df_type = 'role'
-        elif 'Leave Taken' in first_col:
-            header_row = 7
-            df_type = 'att'
-            df_group = df.iloc[3, 0].strip(' position.').split('the ')[-1] \
-                .replace(' ', '_').lower()
-        elif 'Review Sub-Status' in first_col:
-            header_row = 0
-            df_type = 'eval'
-        else:
-            header_row = 0
-            df_type = 'none'
+        if type(df) is list:
+            first_col = df[0].columns[0]
+            if 'only includes employees' in first_col:
+                header_row = 0
+                df_type = 'emp'
+                df_group = df[0].iloc[0, 1].split('.')[0].strip(' position') \
+                    .split('the ')[-1].replace(' ', '_').lower()
+            elif 'report is sorted' in first_col:
+                header_row = 0
+                df_type = 'att'
+                df_group = df[0].columns[0].split('.')[1].strip(' position') \
+                    .split('the ')[-1].replace(' ', '_').lower()
+
+            df = df[1]
+            print(df)
+        else:  
+            first_col = df.columns[0]
+            if 'Employee Settings Report' in first_col:
+                header_row = 5
+                df_type = 'emp'
+                df_group = df.iloc[2, 1].strip(' position.').split('the ')[-1] \
+                    .replace(' ', '_').lower()
+            elif 'Payroll #' in first_col:
+                header_row = 0
+                df_type = 'emp'
+            elif 'Virtual Roster Employee' in first_col:
+                header_row = 2
+                df_type = 'role'
+            elif 'Leave Taken' in first_col:
+                header_row = 7
+                df_type = 'att'
+                df_group = df.iloc[3, 0].strip(' position.').split('the ')[-1] \
+                    .replace(' ', '_').lower()
+            elif 'Review Sub-Status' in first_col:
+                header_row = 0
+                df_type = 'eval'
+            else:
+                header_row = 0
+                df_type = 'none'
 
         if header_row:
             df.rename(columns=df.iloc[header_row], inplace=True)
@@ -151,6 +167,8 @@ def load_dataset(filepath):
 
     if filepath.endswith('.csv'):
         df = pd.read_csv(filepath)
+    elif filepath.endswith('.htm'):
+        df = pd.read_html(filepath, header=0)
     else:
         df = pd.read_excel(filepath)
     return df
@@ -225,6 +243,10 @@ def compile_employee_info(df_emp, df_att, df_role, df_eval):
 
     # Forward fill missing data
     df_att.fillna(method='ffill', inplace=True)
+
+    # Convert date columns to datetime type
+    df_att['date'] = pd.to_datetime(df_att['date'])
+    df_att['role_date'] = pd.to_datetime(df_att['role_date'])
 
     # Remove any occurrences before role start date
     df_att = df_att[df_att['date'] >= df_att['role_date']]
