@@ -155,7 +155,15 @@ def load_dataset(filepath):
 
 
 def combine_dfs(dfs):
+    """
+    Appends dataframes together.
 
+    Args:
+        (list(pandas.DataFrame)) dfs - list of Pandas DataFrames
+    Returns:
+        df - a single Pandas DataFrame appended together from
+             given list of dataframes
+    """
     df_r = pd.DataFrame()
 
     for df in dfs:
@@ -167,15 +175,34 @@ def combine_dfs(dfs):
 
 
 def compile_employee_info(df_emp, df_att, df_role, df_eval):
+    """
+    Merges provided dataset together into one comprehensive dataset including
+    only employees in provided employee list
 
+    Args:
+        (pandas.DataFrame) df_emp - Pandas DataFrame containing a list of employees
+        (pandas.DataFrame) df_att - Pandas DataFrame containing a list of employee
+                           attendance occurrences
+        (pandas.DataFrame) df_role - Pandas DataFrame containing a list of employee
+                           role dates
+        (pandas.DataFrame) df_eval - Pandas DataFrame containing a list of employee
+                           performance scores
+    Returns:
+        df - a single Pandas DataFrame containing information for employees on
+             the given employee list
+    """
+
+    # Split last name and first name into separate columns
     df_emp[['last_name', 'first_name']] = df_emp['name'] \
         .apply(lambda x: pd.Series(x.split(', ')))
     df_emp = df_emp[['payroll_number', 'last_name', 'first_name']]
 
+    # Add role dates for employees
     df_role = df_role[['payroll_number', 'role_date']]
     df_combined = pd.merge(df_emp, df_role,
                            how='left', on='payroll_number')
 
+    # Remove irrelevant columns from performance review data
     df_eval = df_eval[['payroll_number', 'competency_score']]
     df_eval.reset_index(drop=True, inplace=True)
 
@@ -207,6 +234,7 @@ def compile_employee_info(df_emp, df_att, df_role, df_eval):
         .apply(lambda x: 0.5 if x == '1/2' else x)
     df_att = df_att[df_att['points'] != 'MI']
 
+    # Remove irrelevant columns from attendance data
     df_att['points'] = df_att['points'].astype(float)
     df_att = df_att[['payroll_number', 'date', 'points']]
 
@@ -214,16 +242,20 @@ def compile_employee_info(df_emp, df_att, df_role, df_eval):
     df_point_totals = df_att[['payroll_number', 'points']] \
         .groupby(['payroll_number']).sum().reset_index()
 
+    # Set point maximum to 12
     df_point_totals['points'] = df_point_totals['points'] \
         .apply(lambda x: 12 if x > 12 else x)
 
+    # Merge datasets together
     df_combined = pd.merge(df_combined, df_point_totals,
                            how='left', on='payroll_number')
     df_combined = pd.merge(df_combined, df_eval,
                            how='left', on='payroll_number')
 
+    # Fill in missing data with 0
     df_combined.fillna(0, inplace=True)
-    df_combined['role_date'] = df_combined['role_date']
+    # Ensure role dates are datetime data type
+    df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
 
     return df_combined
 
@@ -369,6 +401,7 @@ def main():
         print('\n')
         print(df.describe())
 
+        # Save to file
         filename = OUTPUT_DIR + group + '_ranking_' + \
             pd.Timestamp.now().strftime('%Y%m%d%H%M') + '.csv'
 
