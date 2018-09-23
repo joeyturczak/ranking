@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import pandas as pd
 import numpy as np
+import file_utils, df_utils, vr
 import os
-import pathlib
-import time
 
 # Current working directory
 CURRENT_DIR = os.getcwd()
@@ -22,266 +21,8 @@ pd.set_option('display.max_columns', None)
 
 
 def create_dirs():
-    """Create directories if they don't already exist"""
-    pathlib.Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(SCAN_DIR).mkdir(parents=True, exist_ok=True)
-
-
-def get_files_list(directory='/', extensions='',
-                   startswith='', abs_path=False, sub_dirs=False):
-    """
-    Retrieves a list of files for a given directory.
-
-    Args:
-        (str) directory - path of directory to find files.
-              defaults to root directory.
-        (Tuple) extensions - extensions to include.
-                includes all extensions by default.
-        (str) startswith - file name must begin with this string.
-        (bool) abs_path - set to true if provided directory is an
-               absolute path. Defaults to false for relative path.
-        (bool) sub_dirs - set to true to include files in sub directories.
-               Defaults to false.
-    Returns:
-        files - List of files in specified directory
-    """
-    file_dir = ''
-    if abs_path:
-        file_dir = directory
-    if sub_dirs:
-        files = [os.path.join(root, f)
-                 for root, dirs, files in os.walk(directory)
-                 for f in files
-                 if f.startswith(startswith) and f.endswith(extensions)]
-    else:
-        files = [file_dir + f for f in os.listdir(directory)
-                 if f.startswith(startswith) and f.endswith(extensions)]
-    return files
-
-
-def format_dataset(df):
-    """
-    Renames and formats columns.
-
-    Args:
-        (pandas.DataFrame) df - Pandas DataFrame containing
-                           employee information.
-    Returns:
-        df - Pandas DataFrame that has been cleaned up
-    """
-    # Strip whitespace from columns names and make them lowercase
-    df.rename(columns=lambda x: x.strip().lower().replace(' ', '_'),
-              inplace=True)
-    df.rename(index=str,
-              columns={'payroll_#': 'payroll_number',
-                       'employee_number': 'payroll_number',
-                       'role_/_rate_effective_date': 'role_date'},
-              inplace=True)
-    # Convert payroll_number column to string datatype and
-    # add leading zeroes
-    if 'payroll_number' in df.columns:
-        df['payroll_number'] = df['payroll_number'] \
-           .astype(str).apply('{0:0>6}'.format)
-    return df
-
-
-def identify_dataset(func):
-    """
-    Identifies dataset type and employee group it belongs to,
-    and removes non-header rows.
-
-    Args:
-        (function) func - function that returns a Pandas DataFrame.
-    Returns:
-        dict('df', 'type', 'group')
-            'df' - Pandas DataFrame that has been cleaned up
-            'type' - string -- type of dataset: emp(employee list),
-                     att(attendance points), eval(performance reviews),
-                     role(role dates)
-            'group' - string -- employee group the dataset belongs to.
-                      returns None if not applicable
-    """
-    def wrapper(*args, **kwargs):
-        df = func(*args, **kwargs)
-        df_group = None
-        if type(df) is list:
-            first_col = df[0].columns[0]
-            if 'only includes employees' in first_col:
-                header_row = 0
-                df_type = 'emp'
-                df_group = df[0].iloc[0, 1].split('.')[0].strip(' position') \
-                    .split('the ')[-1].replace(' ', '_').lower()
-            elif 'report is sorted' in first_col:
-                header_row = 0
-                df_type = 'att'
-                df_group = df[0].columns[0].split('.')[1].strip(' position') \
-                    .split('the ')[-1].replace(' ', '_').lower()
-
-            df = df[1]
-            print(df)
-        else:  
-            first_col = df.columns[0]
-            if 'Employee Settings Report' in first_col:
-                header_row = 5
-                df_type = 'emp'
-                df_group = df.iloc[2, 1].strip(' position.').split('the ')[-1] \
-                    .replace(' ', '_').lower()
-            elif 'Payroll #' in first_col:
-                header_row = 0
-                df_type = 'emp'
-            elif 'Virtual Roster Employee' in first_col:
-                header_row = 2
-                df_type = 'role'
-            elif 'Leave Taken' in first_col:
-                header_row = 7
-                df_type = 'att'
-                df_group = df.iloc[3, 0].strip(' position.').split('the ')[-1] \
-                    .replace(' ', '_').lower()
-            elif 'Review Sub-Status' in first_col:
-                header_row = 0
-                df_type = 'eval'
-            else:
-                header_row = 0
-                df_type = 'none'
-
-        if header_row:
-            df.rename(columns=df.iloc[header_row], inplace=True)
-            df = df[header_row + 1:]
-            df.reset_index(drop=True, inplace=True)
-        return {'df': format_dataset
-    (df), 'type': df_type, 'group': df_group}
-    return wrapper
-
-
-@identify_dataset
-def load_dataset(filepath):
-    """
-    Retrieves dataset from specified file
-
-    Args:
-        (str) filename - file path of dataset
-    Returns:
-        df - Pandas DataFrame that has been loaded from file
-    """
-    print('\nLoading data from {}'.format(filepath))
-
-    if filepath.endswith('.csv'):
-        df = pd.read_csv(filepath)
-    elif filepath.endswith('.htm'):
-        df = pd.read_html(filepath, header=0)
-    else:
-        df = pd.read_excel(filepath)
-    return df
-
-
-def combine_dfs(dfs):
-    """
-    Appends dataframes together.
-
-    Args:
-        (list(pandas.DataFrame)) dfs - list of Pandas DataFrames
-    Returns:
-        df - a single Pandas DataFrame appended together from
-             given list of dataframes
-    """
-    df_r = pd.DataFrame()
-
-    for df in dfs:
-        df_r = df_r.append(df)
-
-    df_r.reset_index(drop=True, inplace=True)
-
-    return df_r
-
-
-def compile_employee_info(df_emp, df_att, df_role, df_eval):
-    """
-    Merges provided dataset together into one comprehensive dataset including
-    only employees in provided employee list
-
-    Args:
-        (pandas.DataFrame) df_emp - Pandas DataFrame containing a list of employees
-        (pandas.DataFrame) df_att - Pandas DataFrame containing a list of employee
-                           attendance occurrences
-        (pandas.DataFrame) df_role - Pandas DataFrame containing a list of employee
-                           role dates
-        (pandas.DataFrame) df_eval - Pandas DataFrame containing a list of employee
-                           performance scores
-    Returns:
-        df - a single Pandas DataFrame containing information for employees on
-             the given employee list
-    """
-
-    # Split last name and first name into separate columns
-    df_emp[['last_name', 'first_name']] = df_emp['name'] \
-        .apply(lambda x: pd.Series(x.split(', ')))
-    df_emp = df_emp[['payroll_number', 'last_name', 'first_name']]
-
-    # Add role dates for employees
-    df_role = df_role[['payroll_number', 'role_date']]
-    df_combined = pd.merge(df_emp, df_role,
-                           how='left', on='payroll_number')
-
-    # Remove irrelevant columns from performance review data
-    df_eval = df_eval[['payroll_number', 'competency_score']]
-    df_eval.reset_index(drop=True, inplace=True)
-
-    # If role date is from october last year or later, set to 0
-    df_eval = pd.merge(df_role, df_eval, how='left', on='payroll_number')
-    year = pd.Timestamp.now().year
-    eval_date = pd.Timestamp(year=year - 1, month=10, day=1)
-    df_eval = df_eval[df_eval['role_date'] < eval_date]
-
-    df_eval = df_eval[['payroll_number', 'competency_score']]
-
-    # Get payroll number
-    df_att['payroll_number'] = df_att['employee_name'].str[1:7]
-
-    # Merge datasets
-    df_att = df_att[['payroll_number', 'date', 'actual_leave']]
-    df_att = pd.merge(df_att, df_combined, how='left', on='payroll_number')
-
-    # Forward fill missing data
-    df_att.fillna(method='ffill', inplace=True)
-
-    # Convert date columns to datetime type
-    df_att['date'] = pd.to_datetime(df_att['date'])
-    df_att['role_date'] = pd.to_datetime(df_att['role_date'])
-
-    # Remove any occurrences before role start date
-    df_att = df_att[df_att['date'] >= df_att['role_date']]
-
-    # Strip point values from leave names
-    df_att['points'] = df_att['actual_leave'].str.split('-') \
-        .str[-1].str.strip(' ')
-    df_att['points'] = df_att['points'] \
-        .apply(lambda x: 0.5 if x == '1/2' else x)
-    df_att = df_att[df_att['points'] != 'MI']
-
-    # Remove irrelevant columns from attendance data
-    df_att['points'] = df_att['points'].astype(float)
-    df_att = df_att[['payroll_number', 'date', 'points']]
-
-    # Get point totals for each employee
-    df_point_totals = df_att[['payroll_number', 'points']] \
-        .groupby(['payroll_number']).sum().reset_index()
-
-    # Set point maximum to 12
-    df_point_totals['points'] = df_point_totals['points'] \
-        .apply(lambda x: 12 if x > 12 else x)
-
-    # Merge datasets together
-    df_combined = pd.merge(df_combined, df_point_totals,
-                           how='left', on='payroll_number')
-    df_combined = pd.merge(df_combined, df_eval,
-                           how='left', on='payroll_number')
-
-    # Fill in missing data with 0
-    df_combined.fillna(0, inplace=True)
-    # Ensure role dates are datetime data type
-    df_combined['role_date'] = pd.to_datetime(df_combined['role_date'])
-
-    return df_combined
+    file_utils.create_dir(OUTPUT_DIR)
+    file_utils.create_dir(SCAN_DIR)
 
 
 def calculate_rank(df):
@@ -321,6 +62,9 @@ def calculate_rank(df):
     role_date_len = len(pd.date_range(df['role_date'].min(),
                                       df['role_date'].max(), freq='D'))
     role_score = np.linspace(0, 1, role_date_len)
+
+    # Set point maximum to 12
+    df['points'] = df['points'].apply(lambda x: 12 if x > 12 else x)
 
     # Lookup index of values from appropriate scale
     df['att_score'] = df['points'] \
@@ -372,53 +116,35 @@ def calculate_rank(df):
     return df
 
 
-def main():
+if __name__ == '__main__':
     create_dirs()
 
-    files = get_files_list(directory=SCAN_DIR, extensions=EXT,
-                           abs_path=True, sub_dirs=True)
+    files = file_utils.get_files_list(directory=SCAN_DIR, extensions=EXT,
+                                      abs_path=True, sub_dirs=True)
 
-    emp_datasets = []
-    att_datasets = []
-    df_role = pd.DataFrame()
-    df_evals = []
-    groups = []
+    datasets = []
 
     for f in files:
-        dataset = load_dataset(f)
-        dataset_type = dataset['type']
-        df = dataset['df']
+        datasets.append(vr.Dataset(f))
 
-        if dataset_type == 'role':
-            df_role = df
-        elif dataset_type == 'eval':
-            df_evals.append(df)
-        elif dataset_type == 'emp':
-            emp_datasets.append(dataset)
-        elif dataset_type == 'att':
-            att_datasets.append(dataset)
+    df_perf = df_utils.append_dfs([x.df for x in datasets \
+        if x.df_type == vr.Dataset.PERFORMANCE])
 
-        group = dataset['group']
+    df_role = [x.df for x in datasets \
+        if x.df_type == vr.Dataset.ROLE_DATE][0]
 
-        if group and group not in groups:
-            groups.append(group)
+    df_att = [x.df for x in datasets \
+        if x.df_type == vr.Dataset.ATTENDANCE][0]
 
-    df_eval = combine_dfs(df_evals)
+    groups = [(x.df, x.df_group) for x in datasets \
+        if x.df_type == vr.Dataset.EMPLOYEE_LIST]
 
     for group in groups:
-        print('\n\n\nCalculating ranking for {}\n'.format(group))
-        start_time = time.time()
+        df_emp = group[0]
+        group_name = group[1]
+        df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
 
-        df_emp = [x for x in emp_datasets if x['group'] == group][0]['df']
-        df_att = [x for x in att_datasets if x['group'] == group][0]['df']
-
-        df = compile_employee_info(df_emp, df_att, df_role, df_eval)
         df = calculate_rank(df)
-
-        # Reorder columns
-        df = df[['payroll_number', 'last_name', 'first_name',
-                 'competency_score', 'points', 'role_date', 'eval_score',
-                 'att_score', 'role_score', 'rank_score', 'rank']]
 
         print(df)
         print('\n')
@@ -427,17 +153,8 @@ def main():
         print(df.describe())
 
         # Save to file
-        filename = OUTPUT_DIR + group + '_ranking_' + \
+        filename = OUTPUT_DIR + group_name + '_ranking_' + \
             pd.Timestamp.now().strftime('%Y%m%d%H%M') + '.csv'
 
         print('\nSaving data to file: {}'.format(filename))
         df.to_csv(filename, index=False)
-
-        print("\nThis took {} seconds.".format(time.time() - start_time))
-
-    # Open output directory
-    os.startfile(OUTPUT_DIR)
-
-
-if __name__ == '__main__':
-    main()
