@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import file_utils, df_utils, vr
 import os
+import time
 
 # Current working directory
 CURRENT_DIR = os.getcwd()
@@ -140,11 +141,33 @@ if __name__ == '__main__':
         if x.df_type == vr.Dataset.EMPLOYEE_LIST]
 
     for group in groups:
+        print('\n\n\nCalculating ranking for {}\n'.format(group))
+        start_time = time.time()
+
         df_emp = group[0]
         group_name = group[1]
         df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
 
+        # Save employee info file
+        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
+            '_' + group_name + '_employee_info.csv'
+
+        print('\nSaving data to file: {}'.format(filename))
+        df.to_csv(filename, index=False)
+
         df = calculate_rank(df)
+
+        # Reorder columns
+        df = df[['payroll_number', 'last_name', 'first_name',
+                 'competency_score', 'points', 'role_date', 'eval_score',
+                 'att_score', 'role_score', 'rank_score', 'rank']]
+
+        df_dist = df[['payroll_number', 'last_name', 'first_name',
+                 'competency_score', 'points', 'role_date', 'rank']]
+
+        df_import = df[['payroll_number', 'last_name', 'first_name', 'rank']]
+        first_two = [x[:2].upper() for x in group_name.split('_') if x.isalpha()]
+        df_import['rank'] = ''.join(first_two) + '-' + df['rank'].astype(str).apply('{0:0>3}'.format)
 
         print(df)
         print('\n')
@@ -152,9 +175,28 @@ if __name__ == '__main__':
         print('\n')
         print(df.describe())
 
-        # Save to file
-        filename = OUTPUT_DIR + group_name + '_ranking_' + \
-            pd.Timestamp.now().strftime('%Y%m%d%H%M') + '.csv'
+        # Save raw file
+        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
+            '_' + group_name + '_ranking_raw.csv'
 
         print('\nSaving data to file: {}'.format(filename))
-        df.to_csv(filename, index=False)
+        df.to_csv(filename, index=False) 
+
+        # Save distribution file
+        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
+            '_' + group_name + '_ranking_dist.csv'
+
+        print('\nSaving data to file: {}'.format(filename))
+        df_dist.to_csv(filename, index=False)
+
+        # Save import file
+        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
+            '_' + group_name + '_ranking_import.csv'
+
+        print('\nSaving data to file: {}'.format(filename))
+        df_import.to_csv(filename, index=False)
+
+        print("\nThis took {} seconds.".format(time.time() - start_time))
+
+    # Open output directory
+    os.startfile(OUTPUT_DIR)
