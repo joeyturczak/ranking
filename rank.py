@@ -148,12 +148,12 @@ if __name__ == '__main__':
         group_name = group[1]
         df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
 
-        # Save employee info file
         filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
-            '_' + group_name + '_employee_info.csv'
+            '_' + group_name
 
-        print('\nSaving data to file: {}'.format(filename))
-        df.to_csv(filename, index=False)
+        # Save employee info file
+        print('\nSaving files: {}'.format(filename))
+        df.to_csv(filename + '_employee_info.csv', index=False)
 
         df = calculate_rank(df)
 
@@ -176,25 +176,13 @@ if __name__ == '__main__':
         print(df.describe())
 
         # Save raw file
-        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
-            '_' + group_name + '_ranking_raw.csv'
-
-        print('\nSaving data to file: {}'.format(filename))
-        df.to_csv(filename, index=False) 
+        df.to_csv(filename + '_ranking_raw.csv', index=False) 
 
         # Save distribution file
-        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
-            '_' + group_name + '_ranking_dist.csv'
-
-        print('\nSaving data to file: {}'.format(filename))
-        df_dist.to_csv(filename, index=False)
+        df_dist.to_csv(filename + '_ranking_dist.csv', index=False)
 
         # Save import file
-        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
-            '_' + group_name + '_ranking_import.csv'
-
-        print('\nSaving data to file: {}'.format(filename))
-        df_import.to_csv(filename, index=False)
+        df_import.to_csv(filename + '_ranking_import.csv', index=False)
 
         print("\nThis took {} seconds.".format(time.time() - start_time))
 

@@ -2,3 +2,4 @@ venv/
 output/
 test/
 data/
+__pycache__/
