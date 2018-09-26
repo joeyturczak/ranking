@@ -7,7 +7,7 @@ def create_dir(directory):
 
 
 def get_files_list(directory='/', extensions='',
-                   startswith='', abs_path=False, sub_dirs=False):
+                   startswith='', abs_path=False, sub_dirs=False, exclude_dirs=[]):
     """
     Retrieves a list of files for a given directory.
 
@@ -21,6 +21,7 @@ def get_files_list(directory='/', extensions='',
                absolute path. Defaults to false for relative path.
         (bool) sub_dirs - set to true to include files in sub directories.
                Defaults to false.
+        (list) exclude_dirs - list of directories to exclude. This only applies if sub_dirs is True
     Returns:
         files - List of files in specified directory
     """
@@ -32,6 +33,8 @@ def get_files_list(directory='/', extensions='',
                  for root, dirs, files in os.walk(directory)
                  for f in files
                  if f.startswith(startswith) and f.endswith(extensions)]
+        
+        files[:] = [f for f in files if os.path.basename(os.path.dirname(f)) not in exclude_dirs]
     else:
         files = [file_dir + f for f in os.listdir(directory)
                  if f.startswith(startswith) and f.endswith(extensions)]
@@ -41,4 +44,3 @@ def get_files_list(directory='/', extensions='',
 def get_subdirectories(directory):
     return [name for name in os.listdir(directory) \
             if os.path.isdir(os.path.join(directory, name))]
-            

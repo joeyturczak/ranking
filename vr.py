@@ -5,14 +5,7 @@ import numpy as np
 
 
 class Dataset:
-    EMPLOYEE_LIST = 'employee_list'
-    ATTENDANCE = 'attendance'
-    PERFORMANCE = 'performance'
-    ROLE_DATE = 'role_date'
-
     DF_TYPES = {'employee_list': 1, 'attendance': 2, 'performance': 3,  'role_date': 4}
-
-    # exclude folders named old
 
     # Columns unique to datasets
     COLUMNS = {}

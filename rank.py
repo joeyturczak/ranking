@@ -14,6 +14,8 @@ OUTPUT_DIR = CURRENT_DIR + '/output/'
 # Directory to scan for data input files - change to desired location
 SCAN_DIR = CURRENT_DIR + '/data/'
 
+EXCLUDE_DIRS = ['old']
+
 # Extensions to include in file list
 EXT = (('.xls', '.xlsx', '.csv', '.htm'))
 
@@ -121,7 +123,7 @@ if __name__ == '__main__':
     create_dirs()
 
     files = file_utils.get_files_list(directory=SCAN_DIR, extensions=EXT,
-                                      abs_path=True, sub_dirs=True)
+                                      abs_path=True, sub_dirs=True, exclude_dirs=EXCLUDE_DIRS)
 
     datasets = []
 
