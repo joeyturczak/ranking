@@ -146,7 +146,7 @@ if __name__ == '__main__':
         df_emp = group[0]
         group_name = group[1]
 
-        print('\n\n\nCalculating ranking for {}\n'.format(group_name))
+        print('\n\nCalculating ranking for {}\n'.format(group_name))
         start_time = time.time()
 
         df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
@@ -160,17 +160,18 @@ if __name__ == '__main__':
 
         df = calculate_rank(df)
 
-        # Reorder columns
-        df = df[['payroll_number', 'last_name', 'first_name',
-                 'competency_score', 'points', 'role_date', 'eval_score',
-                 'att_score', 'role_score', 'rank_score', 'rank']]
+        first_two = [x[:2].upper() for x in group_name.split('_') if x.isalpha()]
+        df['import_rank'] = df['rank'].apply(lambda x: ''.join(first_two) + '-' + '{0:0>3}'.format(x))
 
+        # Reorder columns
         df_dist = df[['payroll_number', 'last_name', 'first_name',
                  'competency_score', 'points', 'role_date', 'rank']]
 
-        df_import = df[['payroll_number', 'last_name', 'first_name', 'rank']]
-        first_two = [x[:2].upper() for x in group_name.split('_') if x.isalpha()]
-        df_import['rank'] = ''.join(first_two) + '-' + df['rank'].astype(str).apply('{0:0>3}'.format)
+        df_import = df[['payroll_number', 'last_name', 'first_name', 'import_rank']]
+
+        df = df[['payroll_number', 'last_name', 'first_name',
+                 'competency_score', 'points', 'role_date', 'eval_score',
+                 'att_score', 'role_score', 'rank_score', 'rank']]
 
         print(df.head())
         print('\n')

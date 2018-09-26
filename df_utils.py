@@ -35,7 +35,7 @@ def append_dfs(dfs):
     df_r = pd.DataFrame()
 
     for df in dfs:
-        df_r = df_r.append(df)
+        df_r = df_r.append(df, sort=False)
 
     df_r.reset_index(drop=True, inplace=True)
 
