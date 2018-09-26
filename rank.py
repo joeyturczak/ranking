@@ -129,23 +129,24 @@ if __name__ == '__main__':
         datasets.append(vr.Dataset(f))
 
     df_perf = df_utils.append_dfs([x.df for x in datasets \
-        if x.df_type == vr.Dataset.PERFORMANCE])
+        if x.df_type == vr.Dataset.DF_TYPES['performance']])
 
     df_role = [x.df for x in datasets \
-        if x.df_type == vr.Dataset.ROLE_DATE][0]
+        if x.df_type == vr.Dataset.DF_TYPES['role_date']][0]
 
     df_att = [x.df for x in datasets \
-        if x.df_type == vr.Dataset.ATTENDANCE][0]
+        if x.df_type == vr.Dataset.DF_TYPES['attendance']][0]
 
     groups = [(x.df, x.df_group) for x in datasets \
-        if x.df_type == vr.Dataset.EMPLOYEE_LIST]
+        if x.df_type == vr.Dataset.DF_TYPES['employee_list']]
 
     for group in groups:
-        print('\n\n\nCalculating ranking for {}\n'.format(group))
-        start_time = time.time()
-
         df_emp = group[0]
         group_name = group[1]
+
+        print('\n\n\nCalculating ranking for {}\n'.format(group_name))
+        start_time = time.time()
+
         df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
 
         filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
@@ -169,7 +170,7 @@ if __name__ == '__main__':
         first_two = [x[:2].upper() for x in group_name.split('_') if x.isalpha()]
         df_import['rank'] = ''.join(first_two) + '-' + df['rank'].astype(str).apply('{0:0>3}'.format)
 
-        print(df)
+        print(df.head())
         print('\n')
         print(df.info())
         print('\n')

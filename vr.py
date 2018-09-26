@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import file_utils, df_utils
 import pandas as pd
+import numpy as np
 
 
 class Dataset:
@@ -9,18 +10,20 @@ class Dataset:
     PERFORMANCE = 'performance'
     ROLE_DATE = 'role_date'
 
-    emp_htm_cols = 'only includes employees'
-    att_htm_cols = 'report is sorted'
-    emp_report = 'Employee Settings Report'
-    role_report = 'Virtual Roster Employee'
-    att_report = 'Leave Taken'
-    role_cols = ['Payroll Number', 'Role / Rate Effective Date']
-    perf_cols = ['Employee Number', 'Competency Score']
-    att_cols = ['Employee Number', 'Actual Leave']
-    emp_cols = ['Payroll #', 'Name']
+    DF_TYPES = {'employee_list': 1, 'attendance': 2, 'performance': 3,  'role_date': 4}
+
+    # exclude folders named old
+
+    # Columns unique to datasets
+    COLUMNS = {}
+    COLUMNS['employee_list'] = ['Payroll #', 'Name']
+    COLUMNS['attendance'] = ['Actual Leave']
+    COLUMNS['performance'] = ['Competency Score']
+    COLUMNS['role_date'] = ['Role / Rate Effective Date']
 
     renamed_cols = {'payroll_#': 'payroll_number',
                     'employee_number': 'payroll_number',
+                    'employee_id': 'payroll_number',
                     'role_/_rate_effective_date': 'role_date'}
 
     def __init__(self, filepath):
@@ -40,34 +43,29 @@ class Dataset:
     def _identify_data(self):
         header_row = 0
         if self.filetype == 'htm':
-            first_col = self.df[0].columns[0]
-            if self.emp_htm_cols in first_col:
-                self.df_type = self.EMPLOYEE_LIST
+            df_index = 1
+            for i, df in enumerate(self.df):
+                for key, value in self.COLUMNS.items():
+                    row, col = np.where(df.values == value[0])
+                    if len(row) != 0 or set(value).issubset(df.columns):
+                        self.df_type = self.DF_TYPES[key]
+                        df_index = i
+
+            if self.df_type == self.DF_TYPES['employee_list']:
                 self.df_group = self._get_group()
-            elif self.att_htm_cols in first_col:
-                self.df_type = self.ATTENDANCE
-            
-            self.df = self.df[1]
+
+
+            self.df = self.df[df_index]
         else:
-            first_col = self.df.columns[0]
-            if self.emp_report in first_col:
-                header_row = 5
-                self.df_type = self.EMPLOYEE_LIST
+            for key, value in self.COLUMNS.items():
+                row, col = np.where(self.df.values == value[0])
+                if len(row) != 0 or set(value).issubset(self.df.columns):
+                    self.df_type = self.DF_TYPES[key]
+                    if len(row) != 0:
+                        header_row = row[0]
+
+            if self.df_type == self.DF_TYPES['employee_list']:
                 self.df_group = self._get_group()
-            elif set(self.emp_cols).issubset(self.df.columns):
-                self.df_type = self.EMPLOYEE_LIST
-            elif self.att_report in first_col:
-                header_row = 7
-                self.df_type = self.ATTENDANCE
-            elif set(self.att_cols).issubset(self.df.columns):
-                self.df_type = self.ATTENDANCE
-            elif self.role_report in first_col:
-                header_row = 2
-                self.df_type = self.ROLE_DATE
-            elif set(self.role_cols).issubset(self.df.columns):
-                self.df_type = self.ROLE_DATE
-            elif set(self.perf_cols).issubset(self.df.columns):
-                self.df_type = self.PERFORMANCE
 
         if header_row:
             self.df.rename(columns=self.df.iloc[header_row], inplace=True)
@@ -82,13 +80,20 @@ class Dataset:
         else:
             group = self.df.iloc[2, 1]
 
+        group_type = ''
+
         if 'position' in group:
             group_type = 'position'
         elif 'department' in group:
             group_type = 'department'
 
-        group = group.split('.')[0].strip(' {}'.format(group_type)) \
-            .split('the ')[-1].replace(' ', '_').lower()
+        if not group_type:
+            print('\nGroup name not found for: {}'.format(self.filepath))
+            print(self.df.head())
+            group = input('\nPlease enter group name: ')
+        else:
+            group = group.split('.')[0].strip(' {}'.format(group_type)) \
+                .split('the ')[-1].replace(' ', '_').lower()
 
         return group
         
