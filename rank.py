@@ -8,11 +8,11 @@ import time
 # Current working directory
 CURRENT_DIR = os.getcwd()
 
-# Ouput directory - change to desired location
+# Output directory - change to desired location
 OUTPUT_DIR = CURRENT_DIR + '/output/rank/'
 
 # Directory to scan for data input files - change to desired location
-SCAN_DIR = CURRENT_DIR + '/data/'
+SCAN_DIR = CURRENT_DIR + '/data/rank/'
 
 EXCLUDE_DIRS = ['old']
 
