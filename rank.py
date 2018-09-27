@@ -67,10 +67,10 @@ def calculate_rank(df):
     role_score = np.linspace(0, 1, role_date_len)
 
     # Set point maximum to 12
-    df['points'] = df['points'].apply(lambda x: 12 if x > 12 else x)
+    df['capped_points'] = df['points'].apply(lambda x: 12 if x > 12 else x)
 
     # Lookup index of values from appropriate scale
-    df['att_score'] = df['points'] \
+    df['att_score'] = df['capped_points'] \
         .apply(lambda x: att_score[att_range == x]).astype(float)
 
     df['eval_score'] = df['competency_score'] \
@@ -127,8 +127,11 @@ if __name__ == '__main__':
 
     datasets = []
 
+    start_time = time.time()
     for f in files:
         datasets.append(vr.Dataset(f))
+    
+    print("\nLoading all files took {} seconds.".format(time.time() - start_time))
 
     df_perf = df_utils.append_dfs([x.df for x in datasets \
         if x.df_type == vr.Dataset.DF_TYPES['performance']])
@@ -151,26 +154,17 @@ if __name__ == '__main__':
 
         df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
 
-        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
-            '_' + group_name
-
-        # Save employee info file
-        print('\nSaving files: {}'.format(filename))
-        df.to_csv(filename + '_employee_info.csv', index=False)
-
         df = calculate_rank(df)
 
-        first_two = [x[:2].upper() for x in group_name.split('_') if x.isalpha()]
-        df['import_rank'] = df['rank'].apply(lambda x: ''.join(first_two) + '-' + '{0:0>3}'.format(x))
+        # first_two = [x[:2].upper() for x in group_name.split('_') if x.isalpha()]
+        # df['import_rank'] = df['rank'].apply(lambda x: ''.join(first_two) + '-' + '{0:0>3}'.format(x))
 
         # Reorder columns
         df_dist = df[['payroll_number', 'last_name', 'first_name',
-                 'competency_score', 'points', 'role_date', 'rank']]
-
-        df_import = df[['payroll_number', 'last_name', 'first_name', 'import_rank']]
+                 'competency_score', 'capped_points', 'role_date', 'rank']]
 
         df = df[['payroll_number', 'last_name', 'first_name',
-                 'competency_score', 'points', 'role_date', 'eval_score',
+                 'competency_score', 'points', 'capped_points', 'role_date', 'eval_score',
                  'att_score', 'role_score', 'rank_score', 'rank']]
 
         print(df.head())
@@ -179,16 +173,16 @@ if __name__ == '__main__':
         print('\n')
         print(df.describe())
 
+        filename = OUTPUT_DIR + pd.Timestamp.now().strftime('%Y%m%d%H%M') + \
+            '_' + group_name
+
         # Save raw file
         df.to_csv(filename + '_ranking_raw.csv', index=False) 
 
         # Save distribution file
         df_dist.to_csv(filename + '_ranking_dist.csv', index=False)
 
-        # Save import file
-        df_import.to_csv(filename + '_ranking_import.csv', index=False)
-
-        print("\nThis took {} seconds.".format(time.time() - start_time))
+        print("\nRanking calculation took {} seconds.".format(time.time() - start_time))
 
     # Open output directory
     os.startfile(OUTPUT_DIR)
