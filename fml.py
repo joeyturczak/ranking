@@ -7,25 +7,26 @@ from operator import itemgetter
 # Current working directory
 CURRENT_DIR = os.getcwd()
 
-# Directories for input and output -- change to desired locations
-FML_TYPES = [{'type': 'block',
-              'output_dir': CURRENT_DIR + '/output/fml/blocks/',
-              'scan_dir': CURRENT_DIR + '/data/fml/blocks/'},
-             {'type': 'intermittent',
-              'output_dir': CURRENT_DIR + '/output/fml/intermittent/',
-              'scan_dir': CURRENT_DIR + '/data/fml/intermittent/'}]
+# Output directory - change to desired location
+OUTPUT_DIR = CURRENT_DIR + '/output/fml/'
+
+# Directory to scan for data input files - change to desired location
+SCAN_DIR = CURRENT_DIR + '/data/fml/'
+
+FML_TYPES = ['blocks', 'intermittent']
 
 def create_dirs():
     for fml_type in FML_TYPES:
-        file_utils.create_dir(fml_type['output_dir'])
-        file_utils.create_dir(fml_type['scan_dir'])
+        file_utils.create_dir(OUTPUT_DIR)
+        file_utils.create_dir(SCAN_DIR + fml_type + '/')
 
 
 def read_data(filename):
     df = pd.read_excel(filename)
     df = df.rename(columns={' Start Date': 'Start Date', 'Expected  End Date': 'Expected End Date'})
-    df['Comments'].fillna('', inplace=True)
-    df['Comments'] = df['Comments'].astype(str)
+    if 'Comments' in df.columns:
+        df['Comments'].fillna('', inplace=True)
+        df['Comments'] = df['Comments'].astype(str)
     return df
 
 
@@ -33,10 +34,11 @@ if __name__ == '__main__':
     create_dirs()
 
     for fml_type in FML_TYPES:
-        departments = file_utils.get_subdirectories(fml_type['scan_dir'])
+        scan_dir = SCAN_DIR + fml_type + '/'
+        departments = file_utils.get_subdirectories(scan_dir)
 
         for department in departments:
-            department_dir = fml_type['scan_dir'] + department + '/' 
+            department_dir = scan_dir + department + '/' 
             files = file_utils.get_files_list(department_dir)
             file_dates = []
             for f in files:
@@ -51,7 +53,7 @@ if __name__ == '__main__':
                     if index < len(file_dates):
                         old_date = f['date']
                         new_date = file_dates[index]['date']
-                        dep_out_dir = fml_type['output_dir'] + department + '/'
+                        dep_out_dir = OUTPUT_DIR + department + '/' + fml_type + '/'
                         file_utils.create_dir(dep_out_dir)
                         filename = dep_out_dir + department + '_' + old_date + '_to_' + new_date + '_diff.csv'
                         if not os.path.isfile(filename):
