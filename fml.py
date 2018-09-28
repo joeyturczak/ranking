@@ -27,6 +27,8 @@ def read_data(filename):
     if 'Comments' in df.columns:
         df['Comments'].fillna('', inplace=True)
         df['Comments'] = df['Comments'].astype(str)
+
+    df.drop(df.columns[df.columns.str.contains('Unnamed', case=False)], axis=1, inplace=True)
     return df
 
 
@@ -42,9 +44,10 @@ if __name__ == '__main__':
             files = file_utils.get_files_list(department_dir)
             file_dates = []
             for f in files:
-                date = dt.datetime.strptime(''.join(c for c in f if not c.isalpha() and c not in '&_ '), '%m.%d.%y.').date()
-                date = dt.datetime.strftime(date, '%Y%m%d')
-                file_dates.append({'filename': f, 'date': date})
+                if not f.startswith('~'):
+                    date = dt.datetime.strptime(''.join(c for c in f if not c.isalpha() and c not in '&_ '), '%m.%d.%y.').date()
+                    date = dt.datetime.strftime(date, '%Y%m%d')
+                    file_dates.append({'filename': f, 'date': date})
 
             file_dates = sorted(file_dates, key=itemgetter('date'))
 
@@ -61,7 +64,6 @@ if __name__ == '__main__':
                             new_df = read_data(department_dir + file_dates[index]['filename'])
                             
                             diff_df = df_utils.df_diff(old_df, new_df)
-                            diff_df.drop(diff_df.columns[diff_df.columns.str.contains('Unnamed', case=False)], axis=1, inplace=True)
                             diff_df.to_csv(filename, index=False)
 
                             print('\nSaving to file {}'.format(filename))
