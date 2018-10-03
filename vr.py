@@ -86,7 +86,7 @@ class Dataset:
             group = input('\nPlease enter group name: ')
         else:
             group = group.split('.')[0].strip(' {}'.format(group_type)) \
-                .split('the ')[-1].replace(' ', '_').lower()
+                .split('the ')[-1].replace(' ', '_').replace('/', '').lower()
 
         return group
         
