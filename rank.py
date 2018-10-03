@@ -2,8 +2,7 @@
 import pandas as pd
 import numpy as np
 import file_utils, df_utils, vr
-import os
-import time
+import os, sys, time
 
 # Current working directory
 CURRENT_DIR = os.getcwd()
@@ -126,21 +125,50 @@ if __name__ == '__main__':
                                       abs_path=True, sub_dirs=True, exclude_dirs=EXCLUDE_DIRS)
 
     datasets = []
+    perf = False
+    role = False
+    lt = False
+    pts = False
 
     start_time = time.time()
     for f in files:
         datasets.append(vr.Dataset(f))
+        if datasets[-1].df_type == vr.Dataset.DF_TYPES['performance']:
+            perf = True
+        elif datasets[-1].df_type == vr.Dataset.DF_TYPES['role_date']:
+            role = True
+        elif datasets[-1].df_type == vr.Dataset.DF_TYPES['leave_taken']:
+            lt = True
+        elif datasets[-1].df_type == vr.Dataset.DF_TYPES['point_total']:
+            pts = True
+
+    if not perf:
+        print('\nNo performance score data found.')
+        sys.exit(0)
+    elif not role:
+        print('\nNo role date data found.')
+        sys.exit(0)
+    elif not lt and not pts:
+        print('\nNo attendance data found.')
+        sys.exit(0)
     
     print("\nLoading all files took {} seconds.".format(time.time() - start_time))
 
     df_perf = df_utils.append_dfs([x.df for x in datasets \
-        if x.df_type == vr.Dataset.DF_TYPES['performance']])
+        if x.df_type == vr.Dataset.DF_TYPES['performance']]) 
 
     df_role = [x.df for x in datasets \
         if x.df_type == vr.Dataset.DF_TYPES['role_date']][0]
 
-    df_att = [x.df for x in datasets \
-        if x.df_type == vr.Dataset.DF_TYPES['attendance']][0]
+    df_att_lt = pd.DataFrame()
+    if lt:
+        df_att_lt = [x.df for x in datasets \
+            if x.df_type == vr.Dataset.DF_TYPES['leave_taken']][0]
+
+    df_att_pts = pd.DataFrame()
+    if pts:
+        df_att_pts = [x.df for x in datasets \
+            if x.df_type == vr.Dataset.DF_TYPES['point_total']][0]
 
     groups = [(x.df, x.df_group) for x in datasets \
         if x.df_type == vr.Dataset.DF_TYPES['employee_list']]
@@ -152,7 +180,7 @@ if __name__ == '__main__':
         print('\n\nCalculating ranking for {}\n'.format(group_name))
         start_time = time.time()
 
-        df = vr.get_employee_data(df_emp, df_att, df_role, df_perf)
+        df = vr.get_employee_data(df_emp, df_att_lt, df_att_pts, df_role, df_perf)
 
         df = calculate_rank(df)
 

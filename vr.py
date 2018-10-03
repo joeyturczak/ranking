@@ -5,19 +5,22 @@ import numpy as np
 
 
 class Dataset:
-    DF_TYPES = {'employee_list': 1, 'attendance': 2, 'performance': 3,  'role_date': 4}
+    DF_TYPES = {'employee_list': 1, 'leave_taken': 2, 'point_total': 3, 'performance': 4,  'role_date': 5}
 
     # Columns unique to datasets
     COLUMNS = {}
     COLUMNS['employee_list'] = ['Payroll #', 'Name']
-    COLUMNS['attendance'] = ['Actual Leave']
+    COLUMNS['leave_taken'] = ['Actual Leave']
+    COLUMNS['point_total'] = ['TEST Attendance Points']
     COLUMNS['performance'] = ['Competency Score']
     COLUMNS['role_date'] = ['Role / Rate Effective Date']
 
     renamed_cols = {'payroll_#': 'payroll_number',
                     'employee_number': 'payroll_number',
                     'employee_id': 'payroll_number',
-                    'role_/_rate_effective_date': 'role_date'}
+                    'role_/_rate_effective_date': 'role_date',
+                    'name': 'employee_name',
+                    'test_attendance_points': 'points'}
 
     def __init__(self, filepath):
         self.filepath = filepath
@@ -99,13 +102,15 @@ class Dataset:
         if 'payroll_number' in self.df.columns:
             self.df['payroll_number'] = self.df['payroll_number'] \
             .astype(str).apply('{0:0>6}'.format)
+        else:
+            self.df['payroll_number'] = self.df['employee_name'].str[1:7]
 
         if 'role_date' in self.df.columns:
             self.df['role_date'] = pd.to_datetime(self.df['role_date'])
 
 
 def format_employee_list(df):
-    df[['last_name', 'first_name']] = df['name'] \
+    df[['last_name', 'first_name']] = df['employee_name'] \
         .apply(lambda x: pd.Series(x.split(', ')))
     df = df[['payroll_number', 'last_name', 'first_name']]
 
@@ -135,13 +140,11 @@ def add_performance(df_main, df_perf):
     return df
 
 
-def add_attendance(df_main, df_att):
-    df_att['payroll_number'] = df_att['employee_name'].str[1:7]
-
+def add_attendance_from_leave_taken(df_main, df_att):
     df_att = df_att[['payroll_number', 'date', 'actual_leave']]
     df_att = pd.merge(df_att, df_main, how='left', on='payroll_number')
 
-    df_att.fillna(method='ffill', inplace=True)
+    df_att['payroll_number'].fillna(method='ffill', inplace=True)
 
     df_att['date'] = pd.to_datetime(df_att['date'])
     df_att['role_date'] = pd.to_datetime(df_att['role_date'])
@@ -165,12 +168,26 @@ def add_attendance(df_main, df_att):
     return df
 
 
-def get_employee_data(df_emp, df_att, df_role, df_perf):
+def add_total_points(df_main, df_att):
+    df_att = df_att[['payroll_number', 'points']]
+    df = pd.merge(df_main, df_att, on='payroll_number', how='left')
+    if 'points_x' in df.columns:
+        df['points'] = df['points_y']
+        df['points'].fillna(df['points_x'], inplace=True)
+        df.drop(columns=['points_x', 'points_y'], inplace=True)
+
+    return df
+
+
+def get_employee_data(df_emp, df_att_lt, df_att_pts, df_role, df_perf):
 
     df = format_employee_list(df_emp)
     df = add_role_dates(df, df_role)
     df = add_performance(df, df_perf)
-    df = add_attendance(df, df_att)
+    if not df_att_lt.empty:
+        df = add_attendance_from_leave_taken(df, df_att_lt)
+    if not df_att_pts.empty:
+        df = add_total_points(df, df_att_pts)
 
     df['role_date'].fillna(pd.Timestamp(0), inplace=True)
     df.fillna(0, inplace=True)
