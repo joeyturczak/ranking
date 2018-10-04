@@ -42,10 +42,10 @@ def calculate_rank(df):
     role_pct = 0.1
 
     # Attendance range: 0 to 12 reversed, increments of 0.5
-    att_range = np.array([12.0, 11.5, 11.0, 10.5, 10.0, 9.5, 9.0, 8.5, 8.0,
-                          7.5, 7.0, 6.5, 6.0, 5.5, 5.0, 4.5, 4.0, 3.5, 3.0,
-                          2.5, 2.0, 1.5, 1.0, 0.5, 0])
-    att_score = np.linspace(0, 1, att_range.size)
+    att_range = np.arange(50, 1250, 50)[::-1]
+    att_range = att_range / 100
+    att_range = np.append(att_range, 0)
+    att_scale = np.linspace(0, 1, att_range.size)
 
     # Eval score range: 1 to 5, increments of 0.05, includes 0.
     # Values over the max for the dataset are removed
@@ -55,7 +55,7 @@ def calculate_rank(df):
     eval_range = np.delete(eval_range,
                            np.argwhere(eval_range > df['competency_score']
                                        .max()))
-    eval_score = np.linspace(0, 1, eval_range.size)
+    perf_scale = np.linspace(0, 1, eval_range.size)
 
     # Role date range: min role date to max role date reversed,
     # increments of 1 day
@@ -63,24 +63,24 @@ def calculate_rank(df):
                                     df['role_date'].max(), freq='D')[::-1]
     role_date_len = len(pd.date_range(df['role_date'].min(),
                                       df['role_date'].max(), freq='D'))
-    role_score = np.linspace(0, 1, role_date_len)
+    role_scale = np.linspace(0, 1, role_date_len)
 
     # Set point maximum to 12
     df['capped_points'] = df['points'].apply(lambda x: 12 if x > 12 else x)
 
     # Lookup index of values from appropriate scale
-    df['att_score'] = df['capped_points'] \
-        .apply(lambda x: att_score[att_range == x]).astype(float)
+    df['att_scaled'] = df['capped_points'] \
+        .apply(lambda x: att_scale[att_range == x]).astype(float)
 
-    df['eval_score'] = df['competency_score'] \
-        .apply(lambda x: eval_score[eval_range == x]).astype(float)
+    df['perf_scaled'] = df['competency_score'] \
+        .apply(lambda x: perf_scale[eval_range == x]).astype(float)
 
-    df['role_score'] = df['role_date'] \
-        .apply(lambda x: role_score[role_date_range == x]).astype(float)
+    df['role_scaled'] = df['role_date'] \
+        .apply(lambda x: role_scale[role_date_range == x]).astype(float)
 
     # Calculate total ranking score using percentage weights
-    df['rank_score'] = df['att_score'] * att_pct + df['eval_score'] \
-        * eval_pct + df['role_score'] * role_pct
+    df['rank_scaled'] = df['att_scaled'] * att_pct + df['perf_scaled'] \
+        * eval_pct + df['role_scaled'] * role_pct
 
     # Separate employees into three groups: has an eval score,
     # no eval score, contingent employees
@@ -92,20 +92,20 @@ def calculate_rank(df):
     df_temp = df.loc[df['payroll_number'].str.startswith('C')]
 
     # Sort employees with an eval score by rank score
-    df_score = df_score.sort_values(by=['rank_score'], ascending=False)
+    df_score = df_score.sort_values(by=['rank_scaled'], ascending=False)
     df_score.reset_index(drop=True, inplace=True)
 
     # Sort employees without an eval score by seniority,
     # then attendance, then payroll number
     df_noscore = df_noscore \
-        .sort_values(by=['role_score', 'att_score', 'payroll_number'],
+        .sort_values(by=['role_scaled', 'att_scaled', 'payroll_number'],
                      ascending=(False, False, True))
     df_noscore.reset_index(drop=True, inplace=True)
 
     # Sort contingent employees without an eval score by seniority,
     # then attendance, then payroll number
     df_temp = df_temp \
-        .sort_values(by=['role_score', 'att_score', 'payroll_number'],
+        .sort_values(by=['role_scaled', 'att_scaled', 'payroll_number'],
                      ascending=(False, False, True))
     df_temp.reset_index(drop=True, inplace=True)
 
@@ -134,13 +134,13 @@ if __name__ == '__main__':
     for f in files:
         if not '/~' in f:
             datasets.append(vr.Dataset(f))
-            if datasets[-1].df_type == vr.Dataset.DF_TYPES['performance']:
+            if datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.PERFORMANCE]:
                 perf = True
-            elif datasets[-1].df_type == vr.Dataset.DF_TYPES['role_date']:
+            elif datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.ROLE_DATE]:
                 role = True
-            elif datasets[-1].df_type == vr.Dataset.DF_TYPES['leave_taken']:
+            elif datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_TAKEN]:
                 lt = True
-            elif datasets[-1].df_type == vr.Dataset.DF_TYPES['point_total']:
+            elif datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_ENT]:
                 pts = True
 
     if not perf:
@@ -156,23 +156,23 @@ if __name__ == '__main__':
     print("\nLoading all files took {} seconds.".format(time.time() - start_time))
 
     df_perf = df_utils.append_dfs([x.df for x in datasets \
-        if x.df_type == vr.Dataset.DF_TYPES['performance']]) 
+        if x.df_type == vr.Dataset.df_types[vr.Dataset.PERFORMANCE]]) 
 
     df_role = [x.df for x in datasets \
-        if x.df_type == vr.Dataset.DF_TYPES['role_date']][0]
+        if x.df_type == vr.Dataset.df_types[vr.Dataset.ROLE_DATE]][0]
 
     df_att_lt = pd.DataFrame()
     if lt:
         df_att_lt = [x.df for x in datasets \
-            if x.df_type == vr.Dataset.DF_TYPES['leave_taken']][0]
+            if x.df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_TAKEN]][0]
 
     df_att_pts = pd.DataFrame()
     if pts:
         df_att_pts = [x.df for x in datasets \
-            if x.df_type == vr.Dataset.DF_TYPES['point_total']][0]
+            if x.df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_ENT]][0]
 
     groups = [(x.df, x.df_group) for x in datasets \
-        if x.df_type == vr.Dataset.DF_TYPES['employee_list']]
+        if x.df_type == vr.Dataset.df_types[vr.Dataset.EMPLOYEE_LIST]]
 
     for group in groups:
         df_emp = group[0]
@@ -193,8 +193,8 @@ if __name__ == '__main__':
                  'competency_score', 'capped_points', 'role_date', 'rank']]
 
         df = df[['payroll_number', 'last_name', 'first_name',
-                 'competency_score', 'points', 'capped_points', 'role_date', 'eval_score',
-                 'att_score', 'role_score', 'rank_score', 'rank']]
+                 'competency_score', 'points', 'capped_points', 'role_date', 'perf_scaled',
+                 'att_scaled', 'role_scaled', 'rank_scaled', 'rank']]
 
         print(df.head())
         print('\n')
