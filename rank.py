@@ -134,13 +134,13 @@ if __name__ == '__main__':
     for f in files:
         if not '/~' in f:
             datasets.append(vr.Dataset(f))
-            if datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.PERFORMANCE]:
+            if datasets[-1].df_type == vr.ReportType.PERFORMANCE:
                 perf = True
-            elif datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.ROLE_DATE]:
+            elif datasets[-1].df_type == vr.ReportType.ROLE_DATE:
                 role = True
-            elif datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_TAKEN]:
+            elif datasets[-1].df_type == vr.ReportType.LEAVE_TAKEN:
                 lt = True
-            elif datasets[-1].df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_ENT]:
+            elif datasets[-1].df_type == vr.ReportType.LEAVE_ENT:
                 pts = True
 
     if not perf:
@@ -156,23 +156,23 @@ if __name__ == '__main__':
     print("\nLoading all files took {} seconds.".format(time.time() - start_time))
 
     df_perf = df_utils.append_dfs([x.df for x in datasets \
-        if x.df_type == vr.Dataset.df_types[vr.Dataset.PERFORMANCE]]) 
+        if x.df_type == vr.ReportType.PERFORMANCE]) 
 
     df_role = [x.df for x in datasets \
-        if x.df_type == vr.Dataset.df_types[vr.Dataset.ROLE_DATE]][0]
+        if x.df_type == vr.ReportType.ROLE_DATE][0]
 
     df_att_lt = pd.DataFrame()
     if lt:
         df_att_lt = [x.df for x in datasets \
-            if x.df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_TAKEN]][0]
+            if x.df_type == vr.ReportType.LEAVE_TAKEN][0]
 
     df_att_pts = pd.DataFrame()
     if pts:
         df_att_pts = [x.df for x in datasets \
-            if x.df_type == vr.Dataset.df_types[vr.Dataset.LEAVE_ENT]][0]
+            if x.df_type == vr.ReportType.LEAVE_ENT][0]
 
     groups = [(x.df, x.df_group) for x in datasets \
-        if x.df_type == vr.Dataset.df_types[vr.Dataset.EMPLOYEE_LIST]]
+        if x.df_type == vr.ReportType.EMPLOYEE_LIST]
 
     for group in groups:
         df_emp = group[0]

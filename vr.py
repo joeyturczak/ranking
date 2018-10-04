@@ -5,35 +5,25 @@ import numpy as np
 
 
 class ReportType:
-    def __init__(self, name, key_cols):
-        self.name = name
-        self.key_cols = key_cols
-
-
-class Dataset:
     EMPLOYEE_LIST = 'employee_list'
     LEAVE_TAKEN = 'leave_taken'
     LEAVE_ENT = 'leave_ent'
     PERFORMANCE = 'performance'
     ROLE_DATE = 'role_date'
 
-    # reports = [ReportType('employee_list', ['Payroll #', 'Name']),
-    #            ReportType('leave_taken', ['Actual Leave'])
-    #            ReportType('leave_ent', ['TEST Attendance Points'])
-    #            ReportType('performance', ['Competency Score'])
-    #            ReportType('role_date', ['Role / Rate Effective Date'])]
+    def __init__(self, name, key_cols):
+        self.name = name
+        self.key_cols = key_cols
 
+
+class Dataset:
     HTM_EXT = 'htm'
-
-    df_types = {EMPLOYEE_LIST: 1, LEAVE_TAKEN: 2, LEAVE_ENT: 3, PERFORMANCE: 4, ROLE_DATE: 5}
-
-    # Columns unique to datasets
-    columns = {}
-    columns[EMPLOYEE_LIST] = ['Payroll #', 'Name']
-    columns[LEAVE_TAKEN] = ['Actual Leave']
-    columns[LEAVE_ENT] = ['TEST Attendance Points']
-    columns[PERFORMANCE] = ['Competency Score']
-    columns[ROLE_DATE] = ['Role / Rate Effective Date']
+    
+    reports = [ReportType(ReportType.EMPLOYEE_LIST, ['Payroll #', 'Name']),
+               ReportType(ReportType.LEAVE_TAKEN, ['Actual Leave']),
+               ReportType(ReportType.LEAVE_ENT, ['TEST Attendance Points']),
+               ReportType(ReportType.PERFORMANCE, ['Competency Score']),
+               ReportType(ReportType.ROLE_DATE, ['Role / Rate Effective Date'])]
 
     renamed_cols = {'payroll_#': 'payroll_number',
                     'employee_number': 'payroll_number',
@@ -61,26 +51,26 @@ class Dataset:
         if self.filetype == self.HTM_EXT:
             df_index = 1
             for i, df in enumerate(self.df):
-                for key, value in self.columns.items():
-                    row, col = np.where(df.values == value[0])
-                    if len(row) != 0 or set(value).issubset(df.columns):
-                        self.df_type = self.df_types[key]
+                for report in self.reports:
+                    row, col = np.where(df.values == report.key_cols[0])
+                    if len(row) != 0 or set(report.key_cols).issubset(df.columns):
+                        self.df_type = report.name
                         df_index = i
 
-            if self.df_type == self.df_types[self.EMPLOYEE_LIST]:
+            if self.df_type == ReportType.EMPLOYEE_LIST:
                 self.df_group = self._get_group()
 
 
             self.df = self.df[df_index]
         else:
-            for key, value in self.columns.items():
-                row, col = np.where(self.df.values == value[0])
-                if len(row) != 0 or set(value).issubset(self.df.columns):
-                    self.df_type = self.df_types[key]
+            for report in self.reports:
+                row, col = np.where(self.df.values == report.key_cols[0])
+                if len(row) != 0 or set(report.key_cols).issubset(self.df.columns):
+                    self.df_type = report.name
                     if len(row) != 0:
                         header_row = row[0]
 
-            if self.df_type == self.df_types[self.EMPLOYEE_LIST]:
+            if self.df_type == ReportType.EMPLOYEE_LIST:
                 self.df_group = self._get_group()
 
         if header_row:
