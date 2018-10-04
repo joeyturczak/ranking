@@ -47,11 +47,11 @@ def calculate_rank(df):
                           2.5, 2.0, 1.5, 1.0, 0.5, 0])
     att_score = np.linspace(0, 1, att_range.size)
 
-    # Eval score range: 1 to 5, increments of 0.2, includes 0.
+    # Eval score range: 1 to 5, increments of 0.05, includes 0.
     # Values over the max for the dataset are removed
-    eval_range = np.array([0, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6,
-                           2.8, 3.0, 3.2,  3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6,
-                           4.8, 5.0])
+    eval_range = np.arange(100, 505, 5)
+    eval_range = eval_range / 100
+    eval_range = np.insert(eval_range, 0, 0)
     eval_range = np.delete(eval_range,
                            np.argwhere(eval_range > df['competency_score']
                                        .max()))
@@ -132,15 +132,16 @@ if __name__ == '__main__':
 
     start_time = time.time()
     for f in files:
-        datasets.append(vr.Dataset(f))
-        if datasets[-1].df_type == vr.Dataset.DF_TYPES['performance']:
-            perf = True
-        elif datasets[-1].df_type == vr.Dataset.DF_TYPES['role_date']:
-            role = True
-        elif datasets[-1].df_type == vr.Dataset.DF_TYPES['leave_taken']:
-            lt = True
-        elif datasets[-1].df_type == vr.Dataset.DF_TYPES['point_total']:
-            pts = True
+        if not '/~' in f:
+            datasets.append(vr.Dataset(f))
+            if datasets[-1].df_type == vr.Dataset.DF_TYPES['performance']:
+                perf = True
+            elif datasets[-1].df_type == vr.Dataset.DF_TYPES['role_date']:
+                role = True
+            elif datasets[-1].df_type == vr.Dataset.DF_TYPES['leave_taken']:
+                lt = True
+            elif datasets[-1].df_type == vr.Dataset.DF_TYPES['point_total']:
+                pts = True
 
     if not perf:
         print('\nNo performance score data found.')
