@@ -52,12 +52,13 @@ if __name__ == '__main__':
             file_dates = sorted(file_dates, key=itemgetter('date'))
 
             if len(file_dates) > 1:
+                dep_out_dir = OUTPUT_DIR + department + '/' + fml_type + '/'
+                file_utils.create_dir(dep_out_dir)
                 for index, f in enumerate(file_dates, 1):
                     if index < len(file_dates):
                         old_date = f['date']
                         new_date = file_dates[index]['date']
-                        dep_out_dir = OUTPUT_DIR + department + '/' + fml_type + '/'
-                        file_utils.create_dir(dep_out_dir)
+                        
                         filename = dep_out_dir + department + '_' + old_date + '_to_' + new_date + '_diff.csv'
                         if not os.path.isfile(filename):
                             old_df = read_data(department_dir + f['filename'])
