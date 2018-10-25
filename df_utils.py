@@ -41,10 +41,13 @@ def append_dfs(dfs):
 
     return df_r
 
-def df_diff(df1, df2):
+def df_diff(df1, df2, columns=[]):
+    if not columns:
+        columns = df2.columns.tolist()
     df1['exist'] = 'exist'
-    df = pd.merge(df2, df1, on=df2.columns.tolist(), how='left')
+    df = pd.merge(df2, df1, on=columns, how='left')
     df = df[df['exist'].isnull()].drop('exist', axis=1)
+    df1.drop(columns=['exist'], inplace=True)
     return df
 
 
