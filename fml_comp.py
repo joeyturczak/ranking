@@ -13,6 +13,8 @@ OUTPUT_DIR = CURRENT_DIR + '/output/fml/'
 # Directory to scan for data input files - change to desired location
 SCAN_DIR = CURRENT_DIR + '/data/fml/'
 
+EXCLUDE_DIRS = ['old']
+
 FML_TYPES = ['blocks', 'intermittent']
 
 def create_dirs():
@@ -23,12 +25,16 @@ def create_dirs():
 
 def read_data(filename):
     df = pd.read_excel(filename)
-    df = df.rename(columns={' Start Date': 'Start Date', 'Expected  End Date': 'Expected End Date'})
+    df.drop(df.columns[df.columns.str.contains('Unnamed', case=False)], axis=1, inplace=True)
+
+    df = df.rename(columns={' Start date': 'Start date', 'Expected  End date': 'Expected End date'})
     if 'Comments' in df.columns:
         df['Comments'].fillna('', inplace=True)
         df['Comments'] = df['Comments'].astype(str)
 
-    df.drop(df.columns[df.columns.str.contains('Unnamed', case=False)], axis=1, inplace=True)
+    df = df_utils.normalize_columns(df)
+    # TODO Column names
+    df[''].apply(lambda x: x.astype(str).str.lower())
     return df
 
 
@@ -41,7 +47,7 @@ if __name__ == '__main__':
 
         for department in departments:
             department_dir = scan_dir + department + '/' 
-            files = file_utils.get_files_list(department_dir)
+            files = file_utils.get_files_list(department_dir, exclude_dirs=EXCLUDE_DIRS)
             file_dates = []
             for f in files:
                 if not f.startswith('~'):
@@ -59,21 +65,23 @@ if __name__ == '__main__':
                 comp_df = pd.DataFrame()
                 for index, f in enumerate(file_dates, 1):
                     df = read_data(department_dir + f['filename'])
-                    df['Date'] = f['date']
+                    df['date'] = f['date']
 
                     comp_df = comp_df.append(df)
 
-                first_df = comp_df.sort_values(by=['Date'], ascending=True)
+                first_df = comp_df.sort_values(by=['date'], ascending=True)
                 first_df.reset_index(drop=True, inplace=True)
-                first_df = first_df.rename(index=str, columns={'Date': 'First Appearance'})
-                first_df = first_df.drop_duplicates(subset=[col for col in first_df.columns if col not in ['First Appearance']])
-                last_df = comp_df.sort_values(by=['Date'], ascending=False)
+                first_df = first_df.rename(index=str, columns={'date': 'first_appearance'})
+                first_df = first_df.drop_duplicates(subset=[col for col in first_df.columns if col not in ['first_appearance']])
+                last_df = comp_df.sort_values(by=['date'], ascending=False)
                 last_df.reset_index(drop=True, inplace=True)
-                last_df = last_df.rename(index=str, columns={'Date': 'Last Appearance'})
-                last_df = last_df.drop_duplicates(subset=[col for col in last_df.columns if col not in ['Last Appearance']])
+                last_df = last_df.rename(index=str, columns={'date': 'last_appearance'})
+                last_df = last_df.drop_duplicates(subset=[col for col in last_df.columns if col not in ['last_appearance']])
 
                 comp_df = pd.merge(first_df, last_df)
-                comp_df = comp_df.sort_values(by=['First Appearance'], ascending=False)
+                comp_df = comp_df.sort_values(by=['first_appearance'], ascending=False)
+
+                # TODO reorganize columns
 
                 comp_df.to_csv(filename, index=False)
 
