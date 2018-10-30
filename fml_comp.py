@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 import file_utils, df_utils
 import datetime as dt
@@ -33,8 +34,9 @@ def read_data(filename):
         df['Comments'] = df['Comments'].astype(str)
 
     df = df_utils.normalize_columns(df)
-    # TODO Column names
-    df[''].apply(lambda x: x.astype(str).str.lower())
+    for column in df.select_dtypes(include='object'):
+        df[column] = df[column].str.upper()
+
     return df
 
 
@@ -81,7 +83,11 @@ if __name__ == '__main__':
                 comp_df = pd.merge(first_df, last_df)
                 comp_df = comp_df.sort_values(by=['first_appearance'], ascending=False)
 
-                # TODO reorganize columns
+                columns = comp_df.columns.tolist()
+                columns = [col for col in columns if col not in ['last_appearance', 'first_appearance']]
+                columns.extend(['last_appearance', 'first_appearance'])
+
+                comp_df = comp_df[columns]
 
                 comp_df.to_csv(filename, index=False)
 
