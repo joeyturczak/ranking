@@ -28,14 +28,17 @@ def read_data(filename):
     df = pd.read_excel(filename)
     df.drop(df.columns[df.columns.str.contains('Unnamed', case=False)], axis=1, inplace=True)
 
-    df = df.rename(columns={' Start date': 'Start date', 'Expected  End date': 'Expected End date'})
-    if 'Comments' in df.columns:
-        df['Comments'].fillna('', inplace=True)
-        df['Comments'] = df['Comments'].astype(str)
-
     df = df_utils.normalize_columns(df)
     for column in df.select_dtypes(include='object'):
         df[column] = df[column].str.upper()
+
+    df = df.rename(columns={'_start_date': 'start_date', 'expected__end_date': 'expected_end_date', 'ee#': 'payroll_number', 'ee_#': 'payroll_number'})
+    if 'comments' in df.columns:
+        df['comments'].fillna('', inplace=True)
+        df['comments'] = df['comments'].astype(str)
+
+    if 'smbmi' in df.columns:
+        df = df.drop('smbmi', axis=1)
 
     return df
 
@@ -60,14 +63,15 @@ if __name__ == '__main__':
             file_dates = sorted(file_dates, key=itemgetter('date'))
 
             if len(file_dates) > 1:
-                dep_out_dir = OUTPUT_DIR + department + '/' + fml_type + '/'
+                dep_out_dir = OUTPUT_DIR + department + '/'
                 file_utils.create_dir(dep_out_dir)
-                filename = dep_out_dir + department + '_comprehensive.csv'
+                filename = dep_out_dir + department + '_' + fml_type + '.csv'
 
                 comp_df = pd.DataFrame()
                 for index, f in enumerate(file_dates, 1):
                     df = read_data(department_dir + f['filename'])
                     df['date'] = f['date']
+                    df['date'] = pd.to_datetime(df['date'])
 
                     comp_df = comp_df.append(df)
 
@@ -77,15 +81,15 @@ if __name__ == '__main__':
                 first_df = first_df.drop_duplicates(subset=[col for col in first_df.columns if col not in ['first_appearance']])
                 last_df = comp_df.sort_values(by=['date'], ascending=False)
                 last_df.reset_index(drop=True, inplace=True)
-                last_df = last_df.rename(index=str, columns={'date': 'last_appearance'})
-                last_df = last_df.drop_duplicates(subset=[col for col in last_df.columns if col not in ['last_appearance']])
+                last_df = last_df.rename(index=str, columns={'date': 'most_recent_appearance'})
+                last_df = last_df.drop_duplicates(subset=[col for col in last_df.columns if col not in ['most_recent_appearance']])
 
                 comp_df = pd.merge(first_df, last_df)
                 comp_df = comp_df.sort_values(by=['first_appearance'], ascending=False)
 
                 columns = comp_df.columns.tolist()
-                columns = [col for col in columns if col not in ['last_appearance', 'first_appearance']]
-                columns.extend(['last_appearance', 'first_appearance'])
+                columns = [col for col in columns if col not in ['most_recent_appearance', 'first_appearance']]
+                columns.extend(['most_recent_appearance', 'first_appearance'])
 
                 comp_df = comp_df[columns]
 
