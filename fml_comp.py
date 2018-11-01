@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import os
+import os, time
 import file_utils, df_utils
 import datetime as dt
 from operator import itemgetter
@@ -63,9 +63,12 @@ if __name__ == '__main__':
             file_dates = sorted(file_dates, key=itemgetter('date'))
 
             if len(file_dates) > 1:
-                dep_out_dir = OUTPUT_DIR + department + '/'
+                dep_out_dir = OUTPUT_DIR
                 file_utils.create_dir(dep_out_dir)
                 filename = dep_out_dir + department + '_' + fml_type + '.csv'
+
+                start_time = time.time()
+                print('\nWorking on {}'.format(filename))
 
                 comp_df = pd.DataFrame()
                 for index, f in enumerate(file_dates, 1):
@@ -95,4 +98,9 @@ if __name__ == '__main__':
 
                 comp_df.to_csv(filename, index=False)
 
-                print('\nSaving to file {}'.format(filename))
+                print('Saved to file.')
+
+                print("This took {} seconds.".format(time.time() - start_time))
+
+    # Open output directory
+    os.startfile(OUTPUT_DIR)
