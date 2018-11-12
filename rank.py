@@ -192,6 +192,8 @@ if __name__ == '__main__':
         df_dist = df[['payroll_number', 'last_name', 'first_name',
                  'competency_score', 'capped_points', 'role_date', 'rank']]
 
+        df_points = df[['payroll_number', 'last_name', 'first_name', 'position', 'points']]
+
         df = df[['payroll_number', 'last_name', 'first_name',
                  'competency_score', 'points', 'capped_points', 'role_date', 'perf_scaled',
                  'att_scaled', 'role_scaled', 'rank_scaled', 'rank']]
@@ -210,6 +212,9 @@ if __name__ == '__main__':
 
         # Save distribution file
         df_dist.to_csv(filename + '_ranking_dist.csv', index=False)
+
+        # Save total points file
+        df_points.to_csv(filename + '_points.csv', index=False)
 
         print("\nRanking calculation took {} seconds.".format(time.time() - start_time))
 

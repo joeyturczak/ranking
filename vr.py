@@ -30,7 +30,8 @@ class Dataset:
                     'employee_id': 'payroll_number',
                     'role_/_rate_effective_date': 'role_date',
                     'name': 'employee_name',
-                    'test_attendance_points': 'points'}
+                    'test_attendance_points': 'points',
+                    'roles': 'position'}
 
     def __init__(self, filepath):
         self.filepath = filepath
@@ -122,7 +123,11 @@ class Dataset:
 def format_employee_list(df):
     df[['last_name', 'first_name']] = df['employee_name'] \
         .apply(lambda x: pd.Series(x.split(', ')))
-    df = df[['payroll_number', 'last_name', 'first_name']]
+    
+    if 'position' not in df.columns:
+        df['position'] = np.nan
+
+    df = df[['payroll_number', 'last_name', 'first_name', 'position']]
 
     return df
 
