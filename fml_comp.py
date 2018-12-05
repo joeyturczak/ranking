@@ -30,7 +30,7 @@ def read_data(filename):
 
     df = df_utils.normalize_columns(df)
     for column in df.select_dtypes(include='object'):
-        df[column] = df[column].str.upper()
+        df[column] = df[column].str.upper().strip()
 
     df = df.rename(columns={'_start_date': 'start_date', 'expected__end_date': 'expected_end_date', 'ee#': 'payroll_number', 'ee_#': 'payroll_number'})
     if 'comments' in df.columns:
