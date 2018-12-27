@@ -44,3 +44,19 @@ def get_files_list(directory='/', extensions='',
 def get_subdirectories(directory):
     return [name for name in os.listdir(directory) \
             if os.path.isdir(os.path.join(directory, name))]
+
+def read_conf_file(path, keywords=[], delimiter='='):
+    conf = {}
+
+    def read_line(line):
+        for keyword in keywords:
+            kd = keyword.lower() + delimiter
+            if kd in line.lower():
+                value = line.lower().split(kd)[-1]
+                conf[keyword] = value
+
+    with open(path) as f:
+        for line in f:
+            read_line(line)
+
+    return conf
