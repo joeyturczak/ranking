@@ -57,3 +57,4 @@ def normalize_columns(df):
               inplace=True)
 
     return df
+    
