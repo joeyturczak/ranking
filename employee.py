@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import pandas as pd
-import file_utils, dataset, report_type
+import file_utils, df_utils, dataset, report_type
 import os, time
 
 # Current working directory
@@ -54,7 +54,40 @@ def get_employee_info():
     
     df_demo = df_demo[['payroll_number', 'last_name', 'first_name', 'classification', 'role_date']]
 
-    print(df_demo)
+    df_perf = df_utils.append_dfs([x.df for x in datasets \
+        if x.df_type == report_type.Report_Type.PERFORMANCE])
+
+    df_perf['competency_year'] = df_perf['review_title'].str[:4]
+
+    df_perf = df_perf[['payroll_number', 'competency_score', 'competency_year']]
+
+    df = pd.merge(df_demo, df_perf, how='left', on='payroll_number')
+
+    df_roles = [x.df for x in datasets \
+        if x.df_type == report_type.Report_Type.EMPLOYEE_LIST][0]
+    
+    df_roles = df_roles[['payroll_number', 'position', 'skill']]
+
+    df = pd.merge(df, df_roles, how='left', on='payroll_number')
+
+    print(df)
+
+    filename = out_dir + pd.Timestamp.now().strftime('%Y%m%d%H%M')
+
+    # Save raw file
+    df.to_csv(filename + '_employee_data.csv', index=False)
+
+    # list of positions to exclude
+    # list of positions to separate by skill
+    # list of skills to exclude?
+
+    # ranking can draw from all employees, or employees from list
+
+    # create attendance points module that draws from here
+
+    # create ranking module that draws from points module
+
+    # create fml module that loads roles from here, corrects names and file numbers
 
 if __name__ == '__main__':
     setup()

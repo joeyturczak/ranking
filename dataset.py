@@ -26,7 +26,6 @@ class Dataset:
         self.filepath = filepath
         self.filetype = filepath.split('.')[-1]
 
-        self.df_group = None
         self.df_type = None
 
         self.df = du.load_data(filepath)
