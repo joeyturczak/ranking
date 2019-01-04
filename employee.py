@@ -123,10 +123,17 @@ def get_employee_info():
 
     df = df.sort_values(by=['position', 'last_name', 'first_name'],
                      ascending=(True, True, True))
+    
+    return df
 
-    print(df)
+if __name__ == '__main__':
+    setup()
+
+    df = get_employee_info()
 
     filename = out_dir + pd.Timestamp.now().strftime('%Y%m%d%H%M')
+
+    print(df)
 
     # Save raw file
     df.to_csv(filename + '_employee_data.csv', index=False)
@@ -142,8 +149,3 @@ def get_employee_info():
     # create ranking module that draws from points module
 
     # create fml module that loads roles from here, corrects names and file numbers
-
-if __name__ == '__main__':
-    setup()
-
-    get_employee_info()
