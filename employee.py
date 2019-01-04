@@ -78,6 +78,8 @@ def format_position(df):
 
 
 def get_employee_info():
+    setup()
+
     files = file_utils.get_files_list(directory=in_dir, extensions=EXT,
                                       abs_path=True, sub_dirs=True, exclude_dirs=EXCLUDE_DIRS)
 
@@ -127,8 +129,6 @@ def get_employee_info():
     return df
 
 if __name__ == '__main__':
-    setup()
-
     df = get_employee_info()
 
     filename = out_dir + pd.Timestamp.now().strftime('%Y%m%d%H%M')
