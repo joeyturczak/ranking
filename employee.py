@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pandas as pd
-import file_utils, df_utils, dataset, report_type, group
+import numpy as np
+import file_utils, df_utils, dataset, report_type
 import os, time
 from functools import reduce
 
@@ -10,10 +11,10 @@ CUR_DIR = os.getcwd()
 CONFIGURATION = CUR_DIR + '/employee.conf'
 
 # Output directory - change to desired location
-out_dir = CUR_DIR + '/output/rank/'
+out_dir = CUR_DIR + '/output/employee/'
 
 # Directory to scan for data input files - change to desired location
-in_dir = CUR_DIR + '/data/rank/'
+in_dir = CUR_DIR + '/data/employee/'
 
 EXCLUDE_DIRS = ['old']
 
@@ -42,10 +43,9 @@ pos_to_remove = ['Bussers - IP Busser',
                  'Property-Wide Imported Positions - Admin. Asst.',
                  'Property-Wide Imported Positions - Retail Cashier',
                  'Property-Wide Imported Positions - Inventory Ctrl. Clerk',
-                 'Property-Wide Imported Positions - Spv., Admin']
+                 'Property-Wide Imported Positions - Spv., Admin',
+                 'Property-Wide Imported Positions - Sr. Administrator']
 
-# move this to points module
-groups = [group.Group('baker', ['Bakery - Baker', 'Bakery - Lead Baker'])]
 
 def create_dirs():
     file_utils.create_dir(out_dir)
@@ -53,7 +53,7 @@ def create_dirs():
 
 
 def setup():
-    conf = get_configuration(['in', 'out'])
+    conf = file_utils.read_conf_file(CONFIGURATION, ['in', 'out'])
     
     if 'in' in conf:
         global in_dir
@@ -66,19 +66,10 @@ def setup():
     create_dirs()
 
 
-def get_configuration(keys=[]):
-    conf = {}
-    conf_file = file_utils.read_conf_file(CONFIGURATION, keys)
-    for key in keys:
-        if key in conf_file:
-            conf[key] = conf_file[key]
-
-    return conf
-
-
-def add_groups(df, groups):
-    for group in groups:
-        df['group'] = df['position'].apply(lambda x: group.name if x in group.positions else '')
+def add_groups_by_position(df, groups):
+    for key, values in groups.items():
+        for value in values:
+            df.loc[df['position'] == value, 'group'] = key
 
     return df
 
@@ -153,13 +144,10 @@ if __name__ == '__main__':
     # Save raw file
     df.to_csv(filename + '_employee_data.csv', index=False)
 
-    # list of positions to exclude
     # list of positions to separate by skill
     # list of skills to exclude?
 
     # ranking can draw from all employees, or employees from list
-
-    # create attendance points module that draws from here
 
     # create ranking module that draws from points module
 
