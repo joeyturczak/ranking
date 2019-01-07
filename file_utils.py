@@ -52,7 +52,7 @@ def read_conf_file(path, keywords=[], delimiter='='):
         for keyword in keywords:
             kd = keyword.lower() + delimiter
             if kd in line.lower():
-                value = line.lower().split(kd)[-1]
+                value = line.lower().split(kd)[-1].rstrip('\n')
                 conf[keyword] = value
 
     with open(path) as f:
