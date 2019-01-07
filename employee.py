@@ -53,13 +53,28 @@ def create_dirs():
 
 
 def setup():
-    conf = file_utils.read_conf_file(CONFIGURATION, ['in'])
+    conf = get_configuration(['in', 'out'])
     
     if 'in' in conf:
         global in_dir
         in_dir = conf['in']
 
+    if 'out' in conf:
+        global out_dir
+        out_dir = conf['out']
+
     create_dirs()
+
+
+def get_configuration(keys=[]):
+    conf = {}
+    conf_file = file_utils.read_conf_file(CONFIGURATION, keys)
+    for key in keys:
+        if key in conf_file:
+            conf[key] = conf_file[key]
+
+    return conf
+
 
 def add_groups(df, groups):
     for group in groups:
