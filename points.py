@@ -86,6 +86,8 @@ groups = {'bakery' : ['Bakery - Baker',
                       'Limo Drivers - Limo Driver',
                       'Shuttle Drivers - Shuttle Driver',
                       'Transportation - Admin. Assistant',
+                      'Transportation - Transportation Lead',
+                      'Transportation - Transportation Supervisor',
                       'Valet - Valet Attendant',
                       'Valet - Valet Cashier']}
 
@@ -207,6 +209,8 @@ if __name__ == '__main__':
         df_group = df[df['group'] == group]
 
         df_group.drop(columns=['group'], inplace=True)
+
+        df_group.drop_duplicates(inplace=True)
 
         filename = out_dir + pd.Timestamp.now().strftime('%Y%m%d%H%M') + '_' + group + '_points'
 
