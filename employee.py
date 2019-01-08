@@ -69,7 +69,7 @@ def setup():
 def add_groups_by_position(df, groups):
     for key, values in groups.items():
         for value in values:
-            df.loc[df['position'] == value, 'group'] = key
+            df.loc[df['position'].str.contains(value, regex=False), 'group'] = key
 
     return df
 
@@ -152,3 +152,5 @@ if __name__ == '__main__':
     # create ranking module that draws from points module
 
     # create fml module that loads roles from here, corrects names and file numbers
+
+    # create utility file for loading configurations and getting in and out dirs
