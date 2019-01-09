@@ -47,6 +47,12 @@ pos_to_remove = ['Bussers - IP Busser',
                  'Property-Wide Imported Positions - Sr. Administrator']
 
 
+def get_positions():
+    df = df_utils.load_data(os.getcwd() + '/positions.csv')
+
+    return df
+
+
 def create_dirs():
     file_utils.create_dir(out_dir)
     file_utils.create_dir(in_dir)
@@ -66,14 +72,6 @@ def setup():
     create_dirs()
 
 
-def add_groups_by_position(df, groups):
-    for key, values in groups.items():
-        for value in values:
-            df.loc[df['position'].str.contains(value, regex=False), 'group'] = key
-
-    return df
-
-
 def format_position(df):
     repls = ()
     for pos in pos_to_remove:
@@ -83,7 +81,7 @@ def format_position(df):
     return df
 
 
-def get_employee_info():
+def get_employee_info(grouping=None):
     setup()
 
     files = file_utils.get_files_list(directory=in_dir, extensions=EXT,
@@ -131,6 +129,9 @@ def get_employee_info():
 
     df = df.sort_values(by=['position', 'last_name', 'first_name'],
                      ascending=(True, True, True))
+
+    df.reset_index(drop=True, inplace=True)
+
     
     return df
 
@@ -143,6 +144,9 @@ if __name__ == '__main__':
 
     # Save raw file
     df.to_csv(filename + '_employee_data.csv', index=False)
+
+    # Open output directory
+    os.startfile(out_dir)
 
     # list of positions to separate by skill
     # list of skills to exclude?

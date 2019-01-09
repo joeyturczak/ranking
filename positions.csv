@@ -1,0 +1,66 @@
+position,att_group,rank_group,communities,rank_code
+Bakery - Baker,bakery,baker,,BAK
+Bakery - Lead Baker,bakery,baker,,BAK
+Bartender - Bartender,beverage,bev_bartender,,BEVBRT
+Bartender - Bartender Service,beverage,bev_bartender,,BEVBRT
+Beverage - Bar Back,beverage,bev_bar_back,,BEVBB
+Beverage - Beverage Cart Server,beverage,bev_cart_server,,BEVCRT
+Beverage - Beverage Cashier,beverage,bev_cashier,,BEVCAS
+Beverage - Beverage Control Stock,beverage,bev_ctrl_stock,,BEVSTO
+Beverage - Beverage Service Ambassador,beverage,bev_ambassador,,BEVAMB
+Beverage - Beverage Service Lead,beverage,bev_lead,,BEVLD
+Beverage - Beverage Utility Clerk,beverage,bev_uc,,BEVUC
+Beverage - Host(ess) AIG,beverage,bev_host,,BEVH
+Cocktail Servers - Cocktail Server,beverage,cocktail_server,,COSRV
+Cocktail Servers - Server Marketing Model,beverage,marketing_model,,SMM
+Poker Kitchen - Lead Poker Server,beverage,poker_lead,,POKLD
+Poker Kitchen - Poker Busser,beverage,poker_busser,,POKB
+Poker Kitchen - Poker Food Server,beverage,poker_server,,POKS
+Big Mo' Cafe - Big Mo' Cashier,bigmo,bigmo_cashier,,BMC
+Big Mo' Cafe - Big Mo' Lead Cashier,bigmo,bigmo_lead,,BML
+Buffet - Buffet Busser,buffet,buffet_busser,,BUFB
+Buffet - Buffet Cashier/Host,buffet,buffet_cashier,,BUFC
+Buffet - Buffet Lead Cashier,buffet,buffet_lead_cashier,,BUFLC
+Buffet - Buffet Lead Server,buffet,buffet_lead_server,,BUFLS
+Buffet - Buffet Server,buffet,buffet_server,,BUFS
+Chingon Kitchen - Chingon Busser,chingon,chingon,,CH
+Chingon Kitchen - Chingon Cashier,chingon,chingon,,CH
+Chingon Kitchen - Chingon Lead Cashier,chingon,chingon_lead,,CHL
+Cook 1 - Cook 1,culinary,cook1,,
+Culinary - Cook 2,culinary,cook2,,
+Culinary - Cook 3,culinary,cook3,,
+Culinary - Lead Cook,culinary,lead_cook,,
+Culinary - Rock n' Brew Expo,culinary,cul_expo,,
+Food Court - Food Court Busser,food_court,fc_busser,,FCB
+Food Court - Food Court Cashier,food_court,fc_cashier,,FCC
+Food Court - Food Court Lead Cashier,food_court,fc_lead_cashier,,FCL
+JBQ - JBQ Busser,jbq,jbq,,JBQ
+JBQ - JBQ Cashier,jbq,jbq,,JBQ
+Pines Steakhouse - Pines Bartender,pines,pines_bartender,,PINBRT
+Pines Steakhouse - Pines Busser,pines,pines_busser,,PINB
+Pines Steakhouse - Pines Food Runners,pines,pines_runner,,PINFR
+Pines Steakhouse - Pines Food Server,pines,pines_server,,PINS
+Pines Steakhouse - Pines Host/Hostess,pines,pines_host,,PINH
+Pines Steakhouse - Pines Lead Server,pines,pines_lead,,PINL
+Rock & Brews Staff - Rock & Brews Bartender,rock&brews,rb_bartender,,RBBRT
+Rock & Brews Staff - Rock & Brews Busser,rock&brews,rb_busser,,RBBUS
+Rock & Brews Staff - Rock & Brews Cashier/Host(ess),rock&brews,rb_host,,RBH
+Rock & Brews Staff - Rock & Brews Food Server,rock&brews,rb_server,,RBS
+Rock & Brews Staff - Rock & Brews Lead Server,rock&brews,rb_lead_server,,RBLS
+Rock & Brews Staff - Rock & Brews Bar Back,rock&brews,rb_bar_back,,RBBB
+Rock & Brews Staff - Rock & Brews Lead Bartender,rock&brews,rb_lead_bartender,,RBLB
+Stewarding - Inventory Control Stock,stewarding,stew_ics,,SICS
+Stewarding - Lead Steward,stewarding,stew_lead,,SLS
+Stewarding - Utility Worker,stewarding,stew_uw,,SUW
+Team Dining Room - TDR Busser,tdr,tdr_busser,,TDRB
+Team Dining Room - TDR Cashier,tdr,tdr_cashier,,TDRC
+Team Dining Room - TDR Lead Cashier,tdr,tdr_lead,,TDRL
+Bussing Assistants - Bussing Assistant,tsport,bussing_assistant,,BUSA
+Bussing Assistants - Charter Bus Asst.,tsport,bussing_assistant,,BUSA
+Limo Drivers - Limo Driver,tsport,limo_driver,,LIMO
+Shuttle Drivers - Shuttle Driver,tsport,shuttle_driver,,SHUT
+Transportation - Admin. Assistant,tsport,tsport_admin,,TSADM
+Transportation - Transportation Lead,tsport,tsport_lead,,TSL
+Transportation - Transportation Supervisor,tsport,tpsort_supervisor,,TSSUP
+Valet - Valet Attendant,tsport,valet_attendant,,VALA
+Valet - Valet Cashier,tsport,valet_cashier,,VALC
